@@ -1056,18 +1056,23 @@ SKIP: {
   skip "Tie::IxHash not installed", 1 if $@;
 
   my(%hash1, %hash2);
-  tie %hash1, 'Tie::IxHash', Jan => 1, Feb => 2, Mar => 3, Apr => 4;
-  tie %hash2, 'Tie::IxHash', X => { b => 2 }, A => { c => 3 }, Z => { a => 1 };
+  tie %hash1, 'Tie::IxHash', Jan => 1, Feb => 2, Mar => 3, Apr => 4, May => 5;
+  tie %hash2, 'Tie::IxHash', X => { b => 2 }, A => { c => 3 }, Z => { a => 1 },
+                             M => { f => 6 }, K => { e => 4 }, O => { d => 5 };
   $hash1{func} = \%hash2;
 
   $_ = XMLout(\%hash1, NoSort => 1, KeyAttr => {func => 'name'});
 
-  is($_, qq(<opt Jan="1" Feb="2" Mar="3" Apr="4">\n) .
-         qq(  <func b="2" name="X" />\n) .
-         qq(  <func c="3" name="A" />\n) .
-         qq(  <func a="1" name="Z" />\n) .
-         qq(</opt>\n),
-  'Suppressing sort worked');
+  like($_, qr{
+    ^<opt\sJan="1"\sFeb="2"\sMar="3"\sApr="4"\sMay="5">\s+
+      <func(\sb="2"|\sname="X"){2}\s/>\s+
+      <func(\sc="3"|\sname="A"){2}\s/>\s+
+      <func(\sa="1"|\sname="Z"){2}\s/>\s+
+      <func(\sf="6"|\sname="M"){2}\s/>\s+
+      <func(\se="4"|\sname="K"){2}\s/>\s+
+      <func(\sd="5"|\sname="O"){2}\s/>\s+
+    </opt>\s*$
+  }sx, 'Suppressing sort worked');
 
 }
 
