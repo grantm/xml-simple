@@ -1,5 +1,11 @@
 Revision history for Perl module XML::Simple
 
+2.06  May 18 2003
+      - fixed strict mode requiring ForceArray on output (fix from Igor Roman 
+        Marino)
+      - fixed warnings about uninitialised values
+      - minor POD update (link to FAQ)
+
 2.05  Apr 16 2003
       - fixed warnings when NormaliseSpace undefined (reported by Peter
         Scott and others)
