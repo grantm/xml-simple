@@ -13,7 +13,7 @@ unless(-e $XMLFile) {
 }
 
 
-print "1..65\n";
+print "1..63\n";
 
 my $t = 1;
 
@@ -107,8 +107,8 @@ sub DataCompare {
 
 eval "use XML::Simple;";
 ok(1, !$@);                       # Module compiled OK
-unless($XML::Simple::VERSION eq '1.06') {
-  print STDERR "Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 1.06)...";
+unless($XML::Simple::VERSION eq '1.07b') {
+  print STDERR "Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 1.07b)...";
 }
 
 
@@ -769,40 +769,15 @@ $opt = XMLin($xml, noattr => 1, suppressempty => 1);
 ok(58, DataCompare($opt, undef));
 
 
-# Test that nothing unusual happens with namespaces by default
-
-$xml = q(<opt xmlns="urn:accounts" xmlns:eng="urn:engineering">
-  <invoice_num>12345678</invoice_num>
-  <eng:partnum>8001-22374-001</eng:partnum>
-</opt>);
-
-$opt = XMLin($xml);
-ok(59, DataCompare($opt, {
-  'xmlns' => 'urn:accounts',
-  'xmlns:eng' => 'urn:engineering',
-  'invoice_num' => 12345678,
-  'eng:partnum' => '8001-22374-001'
-}));
-
-
-# Test that we can pass an option in to turn on XML::Parser's namespace mode
-
-$opt = XMLin($xml, parseropts => [ Namespaces => 1 ]);
-ok(60, DataCompare($opt, {
-  'invoice_num' => 12345678,
-  'partnum' => '8001-22374-001'
-}));
-
-
 # Test option error handling
 
 $_ = eval { XMLin('<x y="z" />', rootname => 'fred') }; # not valid for XMLin()
-ok(61, !defined($_));
-ok(62, $@ =~ /Unrecognised option:/);
+ok(59, !defined($_));
+ok(60, $@ =~ /Unrecognised option:/);
 
 $_ = eval { XMLin('<x y="z" />', 'searchpath') };
-ok(63, !defined($_));
-ok(64, $@ =~ /Options must be name=>value pairs .odd number supplied./);
+ok(61, !defined($_));
+ok(62, $@ =~ /Options must be name=>value pairs .odd number supplied./);
 
 
 # Now for a 'real world' test, try slurping in an SRT config file
@@ -891,7 +866,7 @@ $target = {
     }
   }
 };
-ok(65, DataCompare($target, $opt));
+ok(63, DataCompare($target, $opt));
 
 
 exit(0);
