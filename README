@@ -5,11 +5,11 @@ DESCRIPTION
 
   ******* WARNING ******* WARNING ******* WARNING ******* WARNING *******
 
-   This release (1.07b) is a beta release to allow the new SAX code to
+   This release (1.08_01) is a beta release to allow the new SAX code to
    be tested on as many platforms as possible.  Please try it out if you
    can and report success/failure to the author.
 
-   For production systems, please use the latest stable release (1.06)
+   For production systems, please use the latest stable release (1.08)
 
   ******* WARNING ******* WARNING ******* WARNING ******* WARNING *******
 
@@ -44,18 +44,24 @@ BUILDING/INSTALLING
 
 STATUS
 
-  This version (1.07b) is a beta release - to allow testing of the new
+  This version (1.08_01) is a beta release - to allow testing of the new
   SAX code.  If you encounter any problems installing or running this
   release, please email the author the complete output of 'make test'
   (even if your problem does not occur at this point).
 
-  The current stable release is version 1.06.  This version is
+  The current stable release is version 1.08.  This version is
   believed to be thread-safe.
 
   Please send any feedback to the author: grantm@cpan.org
 
 
 NEW IN THIS RELEASE
+
+  - fixed errors with default namespace handling
+  - minor POD updates
+
+  The following additional changes have been made since the last
+  stable release:
 
   - added SAX support including:
     + using SAX parsers

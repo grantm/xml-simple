@@ -1,5 +1,15 @@
 Revision history for Perl module XML::Simple
 
+1.08_01 Feb 14 2002 - beta release for testing SAX support
+	- fixed errors with default namespace handling
+	- minor POD updates
+
+1.08  Feb 09 2002
+	- re-release of 1.06 (stable) with minor updates ...
+	- searchpath option now defaults to current directory if not set
+	- fix to Storable test routine for test failures on Win32
+	- removed obselete 'convert' script from distribution
+
 1.07b Feb 05 2002 - beta release for testing SAX support
 	- added SAX support including:
 	  + using SAX parsers
