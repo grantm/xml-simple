@@ -615,6 +615,14 @@ get 'folded' into hashes.  Similarly, when you call XMLout(), the 'keyattr'
 option controls whether hashes get 'unfolded' into arrays.  As described above,
 'keyattr' is enabled by default.
 
+=head2 Why are empty elements represented as empty hashes?
+
+An element is always represented as a hash unless it contains only text, in
+which case it is represented as a scalar string.
+
+If you would prefer empty elements to be represented as empty strings or the
+undefined value, set the 'suppressempty' option to '' or undef respectively.
+
 =cut
 
 
