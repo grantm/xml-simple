@@ -61,11 +61,11 @@ if($fatal) {
 
 WriteMakefile(
     'NAME'          => 'XML::Simple',
-    'VERSION_FROM'  => 'Simple.pm',
+    'VERSION_FROM'  => 'lib/XML/Simple.pm',
     'DISTNAME'      => 'XML-Simple',
     'dist'          => { COMPRESS => 'gzip --best', SUFFIX => 'gz' },
     ($] >= 5.005 ? (
-      'AUTHOR'        => 'Grant McLean <grantm@web.co.nz>',
-      'ABSTRACT_FROM' => 'Simple.pm',
+      'AUTHOR'        => 'Grant McLean <grantm@cpan.org>',
+      'ABSTRACT_FROM' => 'lib/XML/Simple.pm',
     ) : () )
 );
