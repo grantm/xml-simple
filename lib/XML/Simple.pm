@@ -24,11 +24,13 @@ Or the object oriented way:
 
     my $xml = $xs->XMLout($hashref [, <options>]);
 
-Or to catch common errors:
+(or see L<"SAX SUPPORT"> for 'the SAX way').
+
+To catch common errors:
 
     use XML::Simple qw(:strict);
 
-(or see L<"SAX SUPPORT"> for 'the SAX way').
+(see L<"STRICT MODE"> for more details).
 
 =cut
 
@@ -1951,7 +1953,7 @@ If the first parameter to C<XMLin()> is undefined, the default searchpath
 will contain only the directory in which the script itself is located.
 Otherwise the default searchpath will be empty.  
 
-=item suppressempty => 1 | '' | undef (B<in>) (B<handy>)
+=item suppressempty => 1 | '' | undef (B<in> + B<out>) (B<handy>)
 
 This option controls what C<XMLin()> should do with empty elements (no
 attributes and no content).  The default behaviour is to represent them as
@@ -1960,6 +1962,10 @@ elements to be skipped altogether.  Setting the option to 'undef' or the empty
 string will cause empty elements to be represented as the undefined value or
 the empty string respectively.  The latter two alternatives are a little
 easier to test for in your code than a hash with no keys.
+
+The option also controls what C<XMLout()> does with undefined values.
+Setting the option to undef causes undefined values to be output as
+empty elements (rather than empty attributes).
 
 =item xmldecl => 1  or  xmldecl => 'string'  (B<out>) (B<handy>)
 
