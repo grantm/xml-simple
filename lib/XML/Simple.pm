@@ -53,7 +53,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $PREFERRED_PARSER);
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
 @EXPORT_OK         = qw(xml_in xml_out);
-$VERSION           = '2.04';
+$VERSION           = '2.05';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
@@ -70,7 +70,7 @@ my @KnownOptIn     = qw(keyattr keeproot forcecontent contentkey noattr
 
 my @KnownOptOut    = qw(keyattr keeproot contentkey noattr
                         rootname xmldecl outputfile noescape suppressempty
-                        grouptags nsexpand handler);
+                        grouptags nsexpand handler noindent);
 
 my @DefKeyAttr     = qw(name key id);
 my $DefRootName    = qq(opt);
@@ -650,8 +650,9 @@ sub handle_options  {
   }
 
   unless(exists($opt->{normalisespace})) {
-    $opt->{normalisespace} = $opt->{normalizespace}
+    $opt->{normalisespace} = $opt->{normalizespace};
   }
+  $opt->{normalisespace} = 0 unless(defined($opt->{normalisespace}));
 
   # Cleanups for values assumed to be arrays later
 
@@ -682,15 +683,26 @@ sub handle_options  {
   }
 
   
-  # Special cleanup for {forcearray} which could be arrayref or boolean
+  # Special cleanup for {forcearray} which could be regex, arrayref or boolean
   # or left to default to 0
 
   if(exists($opt->{forcearray})) {
+    if(ref($opt->{forcearray}) eq 'Regexp') {
+      $opt->{forcearray} = [ $opt->{forcearray} ];
+    }
+
     if(ref($opt->{forcearray}) eq 'ARRAY') {
-      if(@{$opt->{forcearray}}) {
-        $opt->{forcearray} = { (
-          map { $_ => 1 } @{$opt->{forcearray}}
-        ) };
+      my @force_list = @{$opt->{forcearray}};
+      if(@force_list) {
+        $opt->{forcearray} = {};
+        foreach my $tag (@force_list) {
+          if(ref($tag) eq 'Regexp') {
+            push @{$opt->{forcearray}->{_regex}}, $tag;
+          }
+          else {
+            $opt->{forcearray}->{$tag} = 1;
+          }
+        }
       }
       else {
         $opt->{forcearray} = 0;
@@ -849,7 +861,7 @@ sub find_xml_file  {
 #
 
 sub collapse {
-  my $self = shift;;
+  my $self = shift;
 
 
   # Start with the hash of attributes
@@ -896,10 +908,12 @@ sub collapse {
       }
 
 
-      if(!%$attr  and  !@_) {      # Short circuit text in tag with no attr
-        return($self->{opt}->{forcecontent} ?
-               { $self->{opt}->{contentkey} => $val } : $val
-              );
+      # Collapse text content in element with no attributes to a string
+
+      if(!%$attr  and  !@_) {
+        return($self->{opt}->{forcecontent} ? 
+          { $self->{opt}->{contentkey} => $val } : $val
+        );
       }
       $key = $self->{opt}->{contentkey};
     }
@@ -919,12 +933,15 @@ sub collapse {
       $attr->{$key} = [ $val ];
     }
     else {
-      if( $key ne $self->{opt}->{contentkey}  and
-          (
-            ($self->{opt}->{forcearray} == 1) or
-            ( 
-              (ref($self->{opt}->{forcearray}) eq 'HASH') and
-              ($self->{opt}->{forcearray}->{$key})
+      if( $key ne $self->{opt}->{contentkey} 
+          and (
+            ($self->{opt}->{forcearray} == 1)
+            or ( 
+              (ref($self->{opt}->{forcearray}) eq 'HASH')
+              and (
+                $self->{opt}->{forcearray}->{$key}
+                or (grep $key =~ $_, @{$self->{opt}->{forcearray}->{_regex}})
+              )
             )
           )
         ) {
@@ -1188,6 +1205,12 @@ sub value_to_xml {
 
   my $nl = "\n";
 
+  if($self->{opt}->{noindent}) {
+    $indent = '';
+    $nl     = '';
+  }
+
+
 
   # Convert to XML
   
@@ -1310,7 +1333,7 @@ sub value_to_xml {
           unless(exists($self->{opt}->{suppressempty})
              and !defined($self->{opt}->{suppressempty})
           ) {
-            carp 'Use of uninitialized value';
+            carp 'Use of uninitialized value' if($^W);
           }
           $value = {};
         }
@@ -1367,16 +1390,16 @@ sub value_to_xml {
         push @result,
              $indent, '<', $name, '>',
              ($self->{opt}->{noescape} ? $value : $self->escape_value($value)),
-             '</', $name, ">\n";
+             '</', $name, ">$nl";
       }
       elsif(UNIVERSAL::isa($value, 'HASH')) {
         push @result, $self->value_to_xml($value, $name, $indent);
       }
       else {
         push @result,
-               $indent, '<', $name, ">\n",
+               $indent, '<', $name, ">$nl",
                $self->value_to_xml($value, 'anon', "$indent  "),
-               $indent, '</', $name, ">\n";
+               $indent, '</', $name, ">$nl";
       }
     }
   }
@@ -1400,9 +1423,9 @@ sub value_to_xml {
 #
 
 sub escape_value {
-  my $self = shift;
+  my($self, $data) = @_;
 
-  my($data) = @_;
+  return '' unless(defined($data));
 
   $data =~ s/&/&amp;/sg;
   $data =~ s/</&lt;/sg;
@@ -1939,7 +1962,14 @@ This alternative (and preferred) form of the 'ForceArray' option allows you to
 specify a list of element names which should always be forced into an array
 representation, rather than the 'all or nothing' approach above.
 
-=item ForceContent (B<in>) (B<seldom used>)
+It is also possible (since version 2.05) to include compiled regular
+expressions in the list - any element names which match the pattern will be
+forced to arrays.  If the list contains only a single regex, then it is not
+necessary to enclose it in an arrayref.  Eg:
+
+  ForceArray => qr/_list$/
+
+=item ForceContent => 1 (B<in>) (B<seldom used>)
 
 When C<XMLin()> parses elements which have text content as well as attributes,
 the text content must be represented as a hash value rather than a simple
@@ -2196,6 +2226,12 @@ By default, C<XMLout()> will translate the characters 'E<lt>', 'E<gt>', '&' and
 '"' to '&lt;', '&gt;', '&amp;' and '&quot' respectively.  Use this option to
 suppress escaping (presumably because you've already escaped the data in some
 more sophisticated manner).
+
+=item NoIndent => 1 (B<out>) (B<seldom used>)
+
+Set this option to 1 to disable C<XMLout()>'s default 'pretty printing' mode.
+With this option enabled, the XML output will all be on one line (unless there
+are newlines in the data) - this may be easier for downstream processing.
 
 =item NSExpand => 1 (B<in+out>) (B<handy - SAX only>)
 
@@ -2756,7 +2792,7 @@ XPath support.
 
 =head1 STATUS
 
-This version (2.04) is the current stable version.
+This version (2.05) is the current stable version.
 
 =head1 SEE ALSO
 
