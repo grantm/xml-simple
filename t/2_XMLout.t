@@ -5,7 +5,7 @@ use strict;
 use Test::More;
 use IO::File;
 
-plan tests => 190;
+plan tests => 192;
 
 ##############################################################################
 #                   S U P P O R T   R O U T I N E S
@@ -628,6 +628,7 @@ like($_, qr{^\s*<(\w+)\s*>\s*<nnn>\s*<nnn>\s*</\1\s*>\s*$}, 'document OK');
 # Check undefined values generate warnings 
 
 {
+  $^W = 1;
   my $warn = '';
   local $SIG{__WARN__} = sub { $warn = $_[0] };
   $_ = eval {
@@ -878,6 +879,24 @@ like($_, qr{
     </dirs>\s*
   </\1>$
 }x, 'Failed to unwrap/group stripped content - as expected');
+
+
+# Check 'NoIndent' option
+
+$ref = {
+  nest   => [ qw(one two three) ]
+};
+
+# Expect:
+#
+# <opt><nest>one</nest><nest>two</nest><nest>three</nest></opt>
+#
+
+$_ = XMLout($ref, NoIndent => 1);
+
+is_deeply(XMLin($_), $ref, 'parses ok');
+is($_, '<opt><nest>one</nest><nest>two</nest><nest>three</nest></opt>',
+'NoIndent worked ok');
 
 
 # 'Stress test' with a data structure that maps to several thousand elements.
