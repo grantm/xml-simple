@@ -336,12 +336,12 @@ ok(69, m{^\s*$}s);
 # Check that custom XML declaration works
 #
 # Expect:
-# <?xml version='1.0' encoding='ISO-8859-1'?>
+# <?xml version='1.0' standalone='yes'?>
 # <opt one="1" />
 
-$_ = XMLout($ref, xmldecl => "<?xml version='1.0' encoding='ISO-8859-1'?>");
+$_ = XMLout($ref, xmldecl => "<?xml version='1.0' standalone='yes'?>");
 ok(70, DataCompare($ref, XMLin($_))); # Parses back OK
-ok(71, s{^\Q<?xml version='1.0' encoding='ISO-8859-1'?>\E}{}s);
+ok(71, s{^\Q<?xml version='1.0' standalone='yes'?>\E}{}s);
 ok(72, s{<opt one="1" />}{}s);
 ok(73, m{^\s*$}s);
 
