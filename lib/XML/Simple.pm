@@ -52,7 +52,7 @@ use vars qw($VERSION @ISA @EXPORT $PREFERRED_PARSER);
 
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
-$VERSION           = '2.01';
+$VERSION           = '2.02';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
@@ -343,7 +343,7 @@ sub StorableSave {
 
   require Storable;           # We didn't need it until now
   
-  Storable::nstore($data, $cachefile);
+  Storable::lock_nstore($data, $cachefile);
   
 }
 
@@ -369,7 +369,7 @@ sub StorableRestore {
     require Storable;           # We didn't need it until now
   }
   
-  return(Storable::retrieve($cachefile));
+  return(Storable::lock_retrieve($cachefile));
   
 }
 
@@ -2416,7 +2416,7 @@ XPath support.
 
 =head1 STATUS
 
-This version (2.01) is the current stable version.
+This version (2.02) is the current stable version.
 
 =head1 SEE ALSO
 
