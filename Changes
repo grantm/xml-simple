@@ -1,5 +1,20 @@
 Revision history for Perl module XML::Simple
 
+1.07b Jan ?? 2002 - limited distribution beta
+	- added SAX support including:
+	  + using SAX parsers
+	  + acting as a SAX handler 
+	  + generating SAX events from XMLout() with new Handler option
+	  + acting as a SAX filter (via new DataHandler option)
+	- added $ENV{XML_SIMPLE_PREFERRED_PARSER} and
+	  $XML::Simple::PREFERRED_PARSER for selecting a parser module
+	- added namespace support (SAX only) with nsexpand option for both 
+	  XMLin() and XMLout()
+	- searchpath now defaults to current directory
+	- parseropts option now officially deprecated
+	- removed obselete 'convert' script from distribution
+	- many POD updates (more to come)
+
 1.06  Nov 19 2001
 	- fixed version number in default xmldecl (thanks to Matt Sergeant for
 	  bug report and patch)
