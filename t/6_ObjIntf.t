@@ -344,7 +344,7 @@ $xml = q(<opt>
   <file name="debug_file">${log_dir}/appname.dbg</file>
 </opt>);
 
-my $opt = $xs1->XMLin($xml);
+$opt = $xs1->XMLin($xml);
 is_deeply($opt, {
   file => {
     config_file => '/etc/appname.conf',

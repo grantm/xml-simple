@@ -25,8 +25,8 @@ my $last_warning = '';
 $@ = '';
 eval "use XML::Simple;";
 is($@, '', 'Module compiled OK');
-unless($XML::Simple::VERSION eq '2.06') {
-  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.06)");
+unless($XML::Simple::VERSION eq '2.07') {
+  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.07)");
 }
 
 
@@ -337,7 +337,7 @@ is_deeply($opt, $target, "same again but with '+' prefix to copy keys");
 
 # Confirm the stringifying references bug is fixed
 
-my $xml = q(
+$xml = q(
   <opt>
     <item>
       <name><firstname>Bob</firstname></name>
