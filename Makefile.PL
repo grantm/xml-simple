@@ -63,6 +63,9 @@ WriteMakefile(
     'NAME'          => 'XML::Simple',
     'VERSION_FROM'  => 'lib/XML/Simple.pm',
     'DISTNAME'      => 'XML-Simple',
+    'PREREQ_PM'     => {
+                         Test::Simple          => 0.41,
+                       },
     'dist'          => { COMPRESS => 'gzip --best', SUFFIX => 'gz' },
     ($] >= 5.005 ? (
       'AUTHOR'        => 'Grant McLean <grantm@cpan.org>',
