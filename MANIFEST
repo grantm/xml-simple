@@ -3,8 +3,8 @@ MANIFEST
 Makefile.PL
 README
 Simple.pm
-convert
 maketest
+t/0_Config.t
 t/1_XMLin.t
 t/1_XMLin.xml
 t/2_XMLout.t
