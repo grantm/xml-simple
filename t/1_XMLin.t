@@ -17,7 +17,7 @@ unless(-e $XMLFile) {
   plan skip_all => 'Test data missing';
 }
 
-plan tests => 117;
+plan tests => 122;
 
 
 my $last_warning = '';
@@ -25,8 +25,8 @@ my $last_warning = '';
 $@ = '';
 eval "use XML::Simple;";
 is($@, '', 'Module compiled OK');
-unless($XML::Simple::VERSION eq '2.11') {
-  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.11)");
+unless($XML::Simple::VERSION eq '2.12') {
+  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.12)");
 }
 
 
@@ -1260,6 +1260,97 @@ is_deeply($opt, [   'one two', 'three four five', 'six', 'seveneightnine' ],
 $opt = XMLin($xml, NormalizeSpace => 2);
 is_deeply($opt, [   'one two', 'three four five', 'six', 'seveneightnine' ],
   "NS-11: space normalized in anonymous array");
+
+# Check that attributes called 'value' are not special
+
+$xml = q(<graphics>
+  <today value="today.png"/>
+  <nav-prev value="prev.png"/>
+  <nav-home value="home.png"/>
+  <nav-next value="next.png"/>
+</graphics>);
+
+$opt = XMLin($xml);
+
+is_deeply($opt, {
+  'today'    => { value => "today.png" },
+  'nav-prev' => { value => "prev.png"  },
+  'nav-home' => { value => "home.png"  },
+  'nav-next' => { value => "next.png"  },
+}, "Nothing special about 'value' attributes");
+
+# Now turn on the ValueAttr option and try again
+
+$opt = XMLin($xml, ValueAttr => [ 'value' ]);
+
+is_deeply($opt, {
+  'today'    => "today.png",
+  'nav-prev' => "prev.png",
+  'nav-home' => "home.png",
+  'nav-next' => "next.png",
+}, "ValueAttr as arrayref works");
+
+# Try with a list of different ValueAttr names
+
+$xml = q(<graphics>
+  <today xxx="today.png"/>
+  <nav-prev yyy="prev.png"/>
+  <nav-home zzz="home.png"/>
+  <nav-next value="next.png"/>
+</graphics>);
+
+$opt = XMLin($xml, ValueAttr => [ qw(xxx yyy zzz) ]);
+
+is_deeply($opt, {
+  'today'    => "today.png",
+  'nav-prev' => "prev.png",
+  'nav-home' => "home.png",
+  'nav-next' => { value => "next.png" },
+}, "ValueAttr as arrayref works");
+
+# Try specifying ValueAttr as a hashref
+
+$xml = q(<graphics>
+  <today xxx="today.png"/>
+  <nav-prev value="prev.png"/>
+  <nav-home yyy="home.png"/>
+  <nav-next value="next.png"/>
+</graphics>);
+
+$opt = XMLin($xml, 
+  ValueAttr => {
+    'today'    => 'xxx', 
+    'nav-home' => 'yyy', 
+    'nav-next' => 'value'
+  }
+);
+
+is_deeply($opt, {
+  'today'    => "today.png",
+  'nav-prev' => { value => "prev.png" },
+  'nav-home' => "home.png",
+  'nav-next' => "next.png",
+}, "ValueAttr as hashref works too");
+
+# Confirm that there's no conflict with KeyAttr or ContentKey defaults
+
+$xml = q(<graphics>
+  <today value="today.png"/>
+  <animal name="lion" age="7"/>
+  <animal name="elephant" age="97"/>
+  <colour rgb="#FF0000">red</colour>
+</graphics>);
+
+$opt = XMLin($xml, ValueAttr => { 'today'    => 'value' });
+
+is_deeply($opt, {
+  today  => 'today.png',
+  animal => {
+    lion     => { age =>  7 },
+    elephant => { age => 97 },
+  },
+  colour => { rgb => '#FF0000', content => 'red' },
+}, "ValueAttr as hashref works too");
 
 # Now for a 'real world' test, try slurping in an SRT config file
 
