@@ -101,7 +101,11 @@ my $xml = '';
 $XML::Simple::PREFERRED_PARSER = '';
 
 ok(CopyFile($SrcFile, $XMLFile), 'created source XML file');
-unlink($CacheFile);
+if ('VMS' eq $^O) {
+  1 while (unlink($CacheFile));
+} else {
+  unlink($CacheFile);
+}
 ok(! -e $CacheFile, 'deleted old cache files');
 
 # Pass in a filename to check parse_uri()
