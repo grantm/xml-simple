@@ -15,14 +15,14 @@ unless(-e $XMLFile) {
   plan skip_all => 'Test data missing';
 }
 
-plan tests => 93;
+plan tests => 95;
 
 
 $@ = '';
 eval "use XML::Simple;";
 is($@, '', 'Module compiled OK');
-unless($XML::Simple::VERSION eq '2.04') {
-  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.04)");
+unless($XML::Simple::VERSION eq '2.05') {
+  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.05)");
 }
 
 
@@ -670,6 +670,41 @@ is_deeply($opt, {
   'two' => [ 'ii' ],
   'three' => [ 'iii', 3, 'c' ]
 }, 'selective application of forcearray successful');
+
+
+# Test forcearray regexes
+
+$xml = q(<opt zero="0">
+  <one>i</one>
+  <two>ii</two>
+  <three>iii</three>
+  <four>iv</four>
+  <five>v</five>
+</opt>
+);
+
+$opt = XMLin($xml, forcearray => [ qr/^f/, 'two', qr/n/ ], @cont_key);
+is_deeply($opt, {
+  'zero'  => '0',
+  'one'   => [ 'i'  ],
+  'two'   => [ 'ii' ],
+  'three' => 'iii',
+  'four'  => [ 'iv' ],
+  'five'  => [ 'v'  ],
+}, 'forcearray using regex successful');
+
+
+# Same again but a single regexp rather than in an arrayref
+
+$opt = XMLin($xml, forcearray => qr/^f|e$/, @cont_key);
+is_deeply($opt, {
+  'zero'  => '0',
+  'one'   => [ 'i'  ],
+  'two'   =>   'ii',
+  'three' => [ 'iii'],
+  'four'  => [ 'iv' ],
+  'five'  => [ 'v'  ],
+}, 'forcearray using a single regex successful');
 
 
 # Test 'noattr' option
