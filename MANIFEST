@@ -3,6 +3,7 @@ MANIFEST
 Makefile.PL
 README
 lib/XML/Simple.pm
+lib/XML/Simple/FAQ.pod
 maketest
 t/0_Config.t
 t/1_XMLin.t
