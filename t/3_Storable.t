@@ -12,6 +12,10 @@ eval { require Storable; };
 unless($INC{'Storable.pm'}) {
   plan skip_all => 'no Storable.pm';
 }
+unless(UNIVERSAL::can(Storable => 'lock_nstore')) {
+  plan skip_all => 'Storable.pm is too old - no file locking support';
+}
+
 
 # Initialise filenames and check they're there
 
