@@ -5,7 +5,7 @@ use strict;
 
 $^W = 1;
 
-use Test::More tests => 33;
+use Test::More tests => 37;
 
 ##############################################################################
 # Derived version of XML::Simple that returns everything in upper case
@@ -72,6 +72,15 @@ sub escape_value {
 package main;
 
 use XML::Simple;
+
+# Check error handling in constructor
+
+$@='';
+$_ = eval { XML::Simple->new('searchpath') };
+is($_, undef, 'invalid number of options are trapped');
+like($@, qr/Default options must be name=>value pairs \(odd number supplied\)/,
+'with correct error message');
+
 
 my $xml = q(<cddatabase>
   <disc id="9362-45055-2" cddbid="960b750c">
@@ -275,6 +284,16 @@ ok(s{<disc(\s+ATTR){3}\s*>(\s*<NEST/>){13}\s*</disc>}{<DISC/>}s, 'disc');
 ok(m{^\s*<(cddatabase)>\s*<DISC/>\s*</\1>\s*$}, 'database');
 
 
+# Confirm error when mandatory parameter missing
+
+$_ = eval {
+  $xs1->XMLout();
+};
+ok(!defined($_), 'XMLout() method call with no args proves fatal');
+like($@, qr/XMLout\(\) requires at least one argument/, 
+'with correct error message');
+
+
 # Check that overriding build_tree() method works
 
 $xml = q(<opt>
@@ -360,3 +379,5 @@ eval { $xs1 = XML::Simple->new(KeyAttr => {}, WibbleFlibble => 1) };
 ok(defined($@), "unrecognised option caught by constructor");
 like($@, qr/^Unrecognised option: WibbleFlibble at/,
   "correct message in exception");
+
+exit(0);

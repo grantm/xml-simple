@@ -120,6 +120,7 @@ is_deeply($opt, $expected, 'qnames are expanded on request');
 $opt = {
   '{http://www.w3.org/2000/xmlns/}perl' => 'http://www.perl.com/',
   '{http://www.perl.com/}attr' => 'value',
+  'bare' => 'Beer!',
   '{http://www.perl.com/}element' => [ 'data' ],
 };
 
@@ -127,7 +128,8 @@ $xml = XMLout($opt);
 like($xml, qr{
   ^\s*<opt
   (\s+{http://www.w3.org/2000/xmlns/}perl="http://www.perl.com/"
-  |\s+{http://www.perl.com/}attr="value"){2}
+  |\s+{http://www.perl.com/}attr="value"
+  |\s+bare="Beer!"){3}
   \s*>
   \s*<{http://www.perl.com/}element\s*>data</{http://www.perl.com/}element\s*>
   \s*</opt>
@@ -141,7 +143,8 @@ $xml = XMLout($opt, nsexpand => 1);
 ok($xml =~ m{
   ^\s*<opt
   (\s+xmlns:perl="http://www.perl.com/"
-  |\s+perl:attr="value"){2}
+  |\s+perl:attr="value"
+  |\s+bare="Beer!"){3}
   \s*>
   \s*<perl:element\s*>data</perl:element\s*>
   \s*</opt>

@@ -17,7 +17,7 @@ unless(-e $XMLFile) {
   plan skip_all => 'Test data missing';
 }
 
-plan tests => 98;
+plan tests => 117;
 
 
 my $last_warning = '';
@@ -25,8 +25,8 @@ my $last_warning = '';
 $@ = '';
 eval "use XML::Simple;";
 is($@, '', 'Module compiled OK');
-unless($XML::Simple::VERSION eq '2.09') {
-  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.09)");
+unless($XML::Simple::VERSION eq '2.10') {
+  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.10)");
 }
 
 
@@ -372,6 +372,37 @@ is($last_warning, '', 'no warning issued');
     qr{<item> element has non-scalar 'name' key attribute},
     'text in warning is correct'
   );
+
+  $last_warning = '';
+  local($^W) = 0;
+  $opt = XMLin($xml, keyattr => { item => 'name' }, @cont_key);
+  is_deeply($opt, $target, "did not fold on specific key with non-scalar value");
+  is($last_warning, '', 'no warning issued (as expected)');
+
+  $last_warning = '';
+  $^W = 1;
+  my $xitems = q(<opt>
+    <item name="color">red</item>
+    <item name="mass">heavy</item>
+    <item nime="disposition">ornery</item>
+  </opt>);
+  my $items = {
+    'item' => [
+      { 'name' => 'color',       'content' => 'red',    },
+      { 'name' => 'mass',        'content' => 'heavy',  },
+      { 'nime' => 'disposition', 'content' => 'ornery', }
+    ]
+  };
+  $opt = XMLin($xitems, keyattr => { item => 'name' }, @cont_key);
+  is_deeply($opt, $items, "did not fold when element missing key attribute");
+  like($last_warning, qr{Warning: <item> element has no 'name' key attribute},
+    'expected warning issued');
+
+  $last_warning = '';
+  $^W = 0;
+  $opt = XMLin($xitems, keyattr => { item => 'name' }, @cont_key);
+  is_deeply($opt, $items, "same again");
+  is($last_warning, '', 'but with no warning this time');
 }
 
 
@@ -443,10 +474,29 @@ is_deeply($opt, {
 $@ = '';
 $opt = undef;
 $opt = eval {
-  XMLin('bogusfile.xml', searchpath => [qw(. ./t)] ); # should 'die'
+  XMLin('bogusfile.xml', searchpath => 't' ); # should 'die'
 };
 is($opt, undef, 'XMLin choked on nonexistant file');
 like($@, qr/Could not find bogusfile.xml in/, 'with the expected message');
+
+
+# same again, but with no searchpath
+
+$@ = '';
+$opt = undef;
+$opt = eval { XMLin('bogusfile.xml'); };
+is($opt, undef, 'nonexistant file not found in current directory');
+like($@, qr/File does not exist: bogusfile.xml/, 'with the expected message');
+
+
+# Confirm searchpath is ignored if filename includes directory component
+
+$@ = '';
+$opt = undef;
+$opt = eval {
+  XMLin(File::Spec->catfile('subdir', 'test2.xml'), searchpath => 't' );
+};
+is($opt, undef, 'search path ignored when pathname supplied');
 
 
 # Try parsing from an IO::Handle 
@@ -476,7 +526,7 @@ is($opt->{location}, 't/1_XMLin.xml', 'and data parsed correctly');
 
 # Confirm anonymous array handling works in general
 
-$opt = XMLin(q(
+$xml = q{
   <opt>
     <row>
       <anon>0.0</anon><anon>0.1</anon><anon>0.2</anon>
@@ -488,14 +538,23 @@ $opt = XMLin(q(
       <anon>2.0</anon><anon>2.1</anon><anon>2.2</anon>
     </row>
   </opt>
-), @cont_key);
-is_deeply($opt, {
+};
+
+$expected = {
   row => [
 	   [ '0.0', '0.1', '0.2' ],
 	   [ '1.0', '1.1', '1.2' ],
 	   [ '2.0', '2.1', '2.2' ]
          ]
-}, 'anonymous arrays parsed correctly');
+};
+
+$opt = XMLin($xml, @cont_key);
+is_deeply($opt, $expected, 'anonymous arrays parsed correctly');
+
+# Confirm it still works with array folding disabled (was a bug)
+
+$opt = XMLin($xml, keyattr => [], @cont_key);
+is_deeply($opt, $expected, 'anonymous arrays parsed correctly');
 
 
 # Confirm anonymous array handling works in special top level case
@@ -618,12 +677,21 @@ is_deeply($opt, {
 
 # Check that mixed content parses in the weird way we expect
 
-$xml = q(<p class="mixed">Text with a <b>bold</b> word</p>);
+$xml = q(<opt>
+  <p1 class="mixed">Text with a <b>bold</b> word</p1>
+  <p2>Mixed <b>but</b> no attributes</p2>
+</opt>);
 
 is_deeply(XMLin($xml, @cont_key), {
-  'class'   => 'mixed',
-  'content' => [ 'Text with a ', ' word' ],
-  'b'       => 'bold'
+  'p1' => {
+    'content' => [ 'Text with a ', ' word' ],
+    'class' => 'mixed',
+    'b' => 'bold'
+  },
+  'p2' => {
+    'content' => [ 'Mixed ', ' no attributes' ],
+    'b' => 'but'
+  }
 }, "mixed content doesn't work - no surprises there");
 
 
@@ -981,6 +1049,7 @@ $xml = q(<opt>
   <file name="log_file">${log_dir}/appname.log</file>
   <file name="debug_file">${log_dir}/appname.dbg</file>
   <opt docs="${have_docs}" />
+  <bogus value="${undef}" />
 </opt>);
 
 $opt = XMLin($xml, contentkey => '-content');
@@ -990,7 +1059,8 @@ is_deeply($opt, {
     log_file    => '${log_dir}/appname.log',
     debug_file  => '${log_dir}/appname.dbg',
   },
-  opt => { docs => '${have_docs}' }
+  opt => { docs => '${have_docs}' },
+  bogus => { value => '${undef}' }
 }, 'undefined variables are left untouched');
 
 
@@ -1007,7 +1077,8 @@ is_deeply($opt, {
     log_file    => '/var/log/appname.log',
     debug_file  => '/var/log/appname.dbg',
   },
-  opt => { docs => 'true' }
+  opt => { docs => 'true' },
+  bogus => { value => '${undef}' }
 }, 'substitution of pre-defined variables works');
 
 
@@ -1087,6 +1158,40 @@ is_deeply($opt, {
 }, 'variables are expanded in later variable definitions');
 
 
+# Confirm only a hash is acceptable to grouptags and variables
+
+$@ = '';
+$_ = eval { $opt = XMLin($xml, grouptags  => [ 'dir' ]); };
+ok(!defined($_), 'grouptags requires a hash');
+like($@, qr/Illegal value for 'GroupTags' option - expected a hashref/, 
+'with correct error message');
+
+$@ = '';
+$_ = eval { $opt = XMLin($xml, variables  => [ 'dir' ]); };
+ok(!defined($_), 'variables requires a hash');
+like($@, qr/Illegal value for 'Variables' option - expected a hashref/, 
+'with correct error message');
+
+
+# Try to disintermediate on the wrong child key
+
+$xml = q(<opt>
+  <prefix>before</prefix>
+  <dirs>
+    <lib>/usr/bin</lib>
+    <lib>/usr/local/bin</lib>
+  </dirs>
+  <suffix>after</suffix>
+</opt>);
+
+$opt = XMLin($xml, grouptags => {dirs => 'dir'} );
+is_deeply($opt, {
+  prefix => 'before',
+  dirs   => { lib => [ '/usr/bin', '/usr/local/bin' ] },
+  suffix => 'after',
+}, 'disintermediation using wrong child key - as expected');
+
+
 # Test option error handling
 
 $@='';
@@ -1122,6 +1227,13 @@ ok(exists($opt->{user}->{'Joe Bloggs'}), "NS-2: space normalised in hash key");
 ok(exists($opt->{user}->{'Jane Doe'}), "NS-3: space normalised in hash key");
 like($opt->{user}->{'Jane Doe'}->{id}, qr{^\s\s+three\s\s+four\s\s+$}s,
   "NS-4: space not normalised in hash value");
+
+$opt = XMLin($xml, KeyAttr => { user => 'name' }, NormaliseSpace => 1);
+ok(ref($opt->{user}) eq 'HASH', "NS-1a: folding OK");
+ok(exists($opt->{user}->{'Joe Bloggs'}), "NS-2a: space normalised in hash key");
+ok(exists($opt->{user}->{'Jane Doe'}), "NS-3a: space normalised in hash key");
+like($opt->{user}->{'Jane Doe'}->{id}, qr{^\s\s+three\s\s+four\s\s+$}s,
+  "NS-4a: space not normalised in hash value");
 
 $opt = XMLin($xml, KeyAttr => [ 'name' ], NormaliseSpace => 2);
 ok(ref($opt->{user}) eq 'HASH', "NS-5: folding OK");

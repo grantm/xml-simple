@@ -43,7 +43,7 @@ if($t1 < $t0  or  $t2 < $t1) {
 }
 
 
-plan tests => 21;
+plan tests => 23;
 
 ##############################################################################
 #                   S U P P O R T   R O U T I N E S
@@ -131,7 +131,7 @@ ok(-e $CacheFile, 'but this time a cache file was created');
 $t0 = (stat($CacheFile))[9];       # Remember cache timestamp
 PassTime($t0);
 
-$opt = XMLin($XMLFile, cache => 'storable');
+$opt = XMLin($XMLFile, cache => ['storable']);
 is_deeply($opt, $Expected, 'got expected data from cache');
 $t1 = (stat($CacheFile))[9];
 is($t0, $t1, 'and cache timestamp has not changed');
@@ -187,6 +187,15 @@ is_deeply($opt, $Expected, 'parsed expected data in through cache');
 
 $opt = XMLin($XMLFile, cache => 'Storable');
 is_deeply($opt, $Expected, 'scheme name is case-insensitive');
+
+# Make sure bad scheme names are trapped
+
+$@='';
+$_ = eval { XMLin($XMLFile, cache => 'Storubble'); };
+is($_, undef, 'bad cache scheme names are trapped');
+like($@, qr/Unsupported caching scheme: storubble/,
+'with correct error message');
+
 
 # Clean up and go
 

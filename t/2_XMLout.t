@@ -7,7 +7,7 @@ use IO::File;
 
 $^W = 1;
 
-plan tests => 192;
+plan tests => 185;
 
 
 ##############################################################################
@@ -28,6 +28,15 @@ sub ReadFile {
 }
 
 use XML::Simple;
+
+# Confirm error when mandatory parameter missing
+
+$_ = eval {
+  XMLout();
+};
+ok(!defined($_), 'call with no args proves fatal');
+like($@, qr/XMLout\(\) requires at least one argument/, 
+'with correct error message');
 
 # Try encoding a scalar value
 
@@ -178,43 +187,45 @@ ok(s{^<(\w+)\s*>\s*</\1>$}{}s, 'document ok');
 #   <country fullname="Turkey" capital="Istanbul" />
 # </opt>
 
-$_ = XMLout($ref, keyattr => ['fullname']);
-$xml = $_;
-is_deeply(XMLin($_, keyattr => ['fullname']), $ref,
+my $expected = qr{
+  ^<(\w+)\s*>\s*
+    (
+      <country(\s*fullname="Turkey"|\s*capital="Istanbul"){2}\s*/>\s*
+     |<country(\s*fullname="France"|\s*capital="Paris"){2}\s*/>\s*
+     |<country(\s*fullname="England"|\s*capital="London"){2}\s*/>\s*
+    ){3}
+  </\1>$
+}xs;
+
+$xml = XMLout($ref, keyattr => ['fullname']);
+is_deeply(XMLin($xml, keyattr => ['fullname']), $ref,
 'encoded hash of hashes with explicit folding enabled');
-ok(s{\s*fullname="England"}{uk}s, 'element 1 attr 1 ok');
-ok(s{\s*capital="London"}{uk}s, 'element 1 attr 2 ok');
-ok(s{\s*fullname="France"}{fr}s, 'element 2 attr 1 ok');
-ok(s{\s*capital="Paris"}{fr}s, 'element 2 attr 2 ok');
-ok(s{\s*fullname="Turkey"}{tk}s, 'element 3 attr 1 ok');
-ok(s{\s*capital="Istanbul"}{tk}s, 'element 3 attr 2 ok');
-ok(s{<countryukuk\s*/>\s*}{}s, 'element 1 ok');
-ok(s{<countryfrfr\s*/>\s*}{}s, 'element 2 ok');
-ok(s{<countrytktk\s*/>\s*}{}s, 'element 2 ok');
-ok(s{^<(\w+)\s*>\s*</\1>$}{}s, 'document ok');
+
+like($xml, $expected, 'output as expected');
+
 
 # Same again but specify name as scalar rather than array
 
-$_ = XMLout($ref, keyattr => 'fullname');
-is($_, $xml, 'still works when keyattr is scalar');
+$xml = XMLout($ref, keyattr => 'fullname');
+like($xml, $expected, 'still works when keyattr is scalar');
 
 
 # Same again but specify keyattr as hash rather than array
 
-$_ = XMLout($ref, keyattr => { country => 'fullname' });
-is($_, $xml, 'still works when keyattr is array');
+$xml = XMLout($ref, keyattr => { country => 'fullname' });
+like($xml, $expected, 'still works when keyattr is hash');
 
 
 # Same again but add leading '+'
 
-$_ = XMLout($ref, keyattr => { country => '+fullname' });
-is($_, $xml, "still works when keyattr is hash with leading '+'");
+$xml = XMLout($ref, keyattr => { country => '+fullname' });
+like($xml, $expected, "still works when keyattr is hash with leading '+'");
 
 
 # and leading '-'
 
-$_ = XMLout($ref, keyattr => { country => '-fullname' });
-is($_, $xml, "still works when keyattr is hash with leading '-'");
+$xml = XMLout($ref, keyattr => { country => '-fullname' });
+like($xml, $expected, "still works when keyattr is hash with leading '-'");
 
 
 # One more time but with default key folding values
@@ -226,19 +237,20 @@ is($_, $xml, "still works when keyattr is hash with leading '-'");
 #   <country name="Turkey" capital="Istanbul" />
 # </opt>
 
-$_ = XMLout($ref);
-is_deeply(XMLin($_), $ref,
+$expected = qr{
+  ^<(\w+)\s*>\s*
+    (
+      <country(\s*name="Turkey"|\s*capital="Istanbul"){2}\s*/>\s*
+     |<country(\s*name="France"|\s*capital="Paris"){2}\s*/>\s*
+     |<country(\s*name="England"|\s*capital="London"){2}\s*/>\s*
+    ){3}
+  </\1>$
+}xs;
+
+$xml = XMLout($ref);
+is_deeply(XMLin($xml), $ref,
 'encoded hash of hashes with default folding enabled');
-ok(s{\s*name="England"}{uk}s, 'element 1 attr 1 ok');
-ok(s{\s*capital="London"}{uk}s, 'element 1 attr 2 ok');
-ok(s{\s*name="France"}{fr}s, 'element 2 attr 1 ok');
-ok(s{\s*capital="Paris"}{fr}s, 'element 2 attr 2 ok');
-ok(s{\s*name="Turkey"}{tk}s, 'element 3 attr 1 ok');
-ok(s{\s*capital="Istanbul"}{tk}s, 'element 3 attr 2 ok');
-ok(s{<countryukuk\s*/>\s*}{}s, 'element 1 ok');
-ok(s{<countryfrfr\s*/>\s*}{}s, 'element 2 ok');
-ok(s{<countrytktk\s*/>\s*}{}s, 'element 2 ok');
-ok(s{^<(\w+)\s*>\s*</\1>$}{}s, 'document ok');
+like($xml, $expected, "expected output with default keyattr");
 
 
 # Finally, confirm folding still works with only one nested hash
@@ -296,12 +308,17 @@ ok(s{^<(\w+)\s*/>$}{}s, 'data OK too');
 
 # unless we turn escaping off
 
+$ref = { a => '<A>', b => '"B"', c => ['&C&'] };
 $_ = XMLout($ref, noescape => 1);
 ok(s{a="<A>"}{}s, 'generated unescaped angle brackets');
 ok(s{b=""B""}{}s, 'generated unescaped double quotes');
-ok(s{c="&C&"}{}s, 'generated unescaped ampersands');
-ok(s{^<(\w+)\s*/>$}{}s, 'data OK too');
+ok(s{<c>&C&</c>}{}s, 'generated unescaped ampersands');
+ok(s{^<(\w+)\s*>\s*</\1>$}{}s, 'data OK too');
 
+# same again but with a scalar
+
+$xml = XMLout("<scalar>", noescape => 1);
+like($xml, qr{^<(\w+)><scalar></\1>}, "Unescaped scalar as expected too");
 
 # Try encoding a circular data structure and confirm that it fails
 
@@ -513,10 +530,10 @@ unlink($TestFile);
 # Test output to an IO handle
 
 ok(!-e $TestFile);
-my $fh = new IO::File;
 eval {
+  my $fh = new IO::File;
   $fh->open(">$TestFile") || die "$!";
-  XMLout($hashref1, outputfile => $TestFile);
+  XMLout($hashref1, outputfile => $fh);
   $fh->close();
 };
 ok(-e $TestFile, 'create XML output file via IO::File');
@@ -634,7 +651,7 @@ like($_, qr{^\s*<(\w+)\s*>\s*<nnn>\s*<nnn>\s*</\1\s*>\s*$}, 'document OK');
 # Check undefined values generate warnings 
 
 {
-  $^W = 1;
+  local($^W) = 1;
   my $warn = '';
   local $SIG{__WARN__} = sub { $warn = $_[0] };
   $_ = eval {
@@ -643,6 +660,15 @@ like($_, qr{^\s*<(\w+)\s*>\s*<nnn>\s*<nnn>\s*</\1\s*>\s*$}, 'document OK');
   };
   like($warn, qr/Use of uninitialized value/, 
     'caught warning re uninitialised value');
+
+  # unless warnings are disabled
+  $^W = 0;
+  $warn = '';
+  $_ = eval {
+    $ref = { 'tag' => undef };
+    XMLout($ref);
+  };
+  is($warn, '', 'no warning re uninitialised value if warnings off');
 }
 
 
@@ -693,6 +719,32 @@ like($_, qr{^\s*<opt\s+one="1">text</opt>\s*$}s, 'even when name changed');
 $_ = XMLout($ref, contentkey => '-text_content');
 
 like($_, qr{^\s*<opt\s+one="1">text</opt>\s*$}s, 'even with "-" prefix');
+
+
+# Confirm content key works with undef values (and no warnings)
+
+{
+  $^W = 1;
+  my $warn = '';
+  local $SIG{__WARN__} = sub { $warn = $_[0] };
+  $_ = eval {
+    $ref = { 
+      column => [
+        { name => 'title',   content => 'A Title' },
+        { name => 'sponsor', content => undef },
+      ],
+    };
+    XMLout($ref, suppress_empty => undef, content_key => 'content');
+  };
+  ok(!$warn,  'no warnings with suppress_empty => undef');
+  like($_, qr{^<(\w+)>
+      \s*<column\s+name="title"\s*>A\sTitle</column>
+      \s*<column\s+name="sponsor"\s*></column>
+      \s*
+      </\1>$
+    }sx, "undef does not cause content tags in output"
+  );
+}
 
 
 # Check 'noattr' option
@@ -905,14 +957,129 @@ is($_, '<opt><nest>one</nest><nest>two</nest><nest>three</nest></opt>',
 'NoIndent worked ok');
 
 
+# Try the 'AttrIndent' option (assume NoSort defaults to off)
+
+$ref = {
+  beta => '2', 
+  gamma => '3', 
+  alpha => '1', 
+  colours => {
+    red => '#ff0000',
+    green => '#00ff00',
+  }
+};
+
+$_ = XMLout($ref, AttrIndent => 1, RootName => 'opt');
+
+is($_, '<opt alpha="1"
+     beta="2"
+     gamma="3">
+  <colours green="#00ff00"
+           red="#ff0000" />
+</opt>
+', 'AttrIndent seems to work');
+
+
+# Test the attribute/element sorting algorithm
+
+$xml = q{
+<opt>
+  <test id="beta"  animal="elephant" vegetable="carrot" />
+  <test id="gamma" animal="tiger"    vegetable="turnip" />
+  <test id="alpha" animal="giraffe"  vegetable="pumpkin" />
+  <box size="small" key="a" />
+  <box size="medium" id="b" />
+</opt>
+};
+
+$ref = XMLin($xml);
+
+$_ = XMLout($ref, RootName => 'opt');
+
+is($_, qq(<opt>\n) .
+       qq(  <box name="a" size="small" />\n) .
+       qq(  <box name="b" size="medium" />\n) .
+       qq(  <test name="alpha" animal="giraffe" vegetable="pumpkin" />\n) .
+       qq(  <test name="beta" animal="elephant" vegetable="carrot" />\n) .
+       qq(  <test name="gamma" animal="tiger" vegetable="turnip" />\n) .
+       qq(</opt>\n),
+'sorting by default key attribute works');
+
+
+# Try again but with specific key fields:
+
+$ref = XMLin($xml, KeyAttr => {test => 'vegetable', box => 'size'});
+
+$_ = XMLout($ref,
+  RootName => 'opt', 
+  KeyAttr => {test => 'vegetable', box => 'size'}
+);
+
+is($_, qq(<opt>\n) .
+       qq(  <box size="medium" id="b" />\n) .
+       qq(  <box size="small" key="a" />\n) .
+       qq(  <test vegetable="carrot" animal="elephant" id="beta" />\n) .
+       qq(  <test vegetable="pumpkin" animal="giraffe" id="alpha" />\n) .
+       qq(  <test vegetable="turnip" animal="tiger" id="gamma" />\n) .
+       qq(</opt>\n),
+'sorting by specified key attributes works');
+
+
+# Try again but with no key fields:
+
+$ref = XMLin($xml, KeyAttr => {});
+
+$_ = XMLout($ref, RootName => 'opt', KeyAttr => {});
+
+like($_, qr{^<opt>\s*
+  (
+    (
+      <test\s+animal="elephant"\s+id="beta"\s+vegetable="carrot"\s*/>\s*
+      <test\s+animal="tiger"\s+id="gamma"\s+vegetable="turnip"\s*/>\s*
+      <test\s+animal="giraffe"\s+id="alpha"\s+vegetable="pumpkin"\s*/>\s*
+    )
+    |(
+      <box\s+key="a"\s+size="small"\s*/>\s*
+      <box\s+id="b"\s+size="medium"\s*/>\s*
+    )
+  ){2}
+</opt>\s*
+$}sx, 'sorting with no key attribute works');
+
+
+# Check that sorting can be disabled
+
+$@ = '';
+SKIP: {
+  eval { require Tie::IxHash };
+
+  skip "Tie::IxHash not installed", 1 if $@;
+
+  my(%hash1, %hash2);
+  tie %hash1, 'Tie::IxHash', Jan => 1, Feb => 2, Mar => 3, Apr => 4;
+  tie %hash2, 'Tie::IxHash', X => { b => 2 }, A => { c => 3 }, Z => { a => 1 };
+  $hash1{func} = \%hash2;
+
+  $_ = XMLout(\%hash1, NoSort => 1, KeyAttr => {func => 'name'});
+
+  is($_, qq(<opt Jan="1" Feb="2" Mar="3" Apr="4">\n) .
+         qq(  <func b="2" name="X" />\n) .
+         qq(  <func c="3" name="A" />\n) .
+         qq(  <func a="1" name="Z" />\n) .
+         qq(</opt>\n),
+  'Suppressing sort worked');
+
+}
+
 # 'Stress test' with a data structure that maps to several thousand elements.
 # Unfold elements with XMLout() and fold them up again with XMLin()
 
 my $opt1 =  {};
-foreach my $i (1..40) {
-  foreach my $j (1..$i) {
+foreach my $i (0..40) {
+  foreach my $j (0..$i) {
     $opt1->{TypeA}->{$i}->{Record}->{$j} = { Hex => sprintf("0x%04X", $j) };
     $opt1->{TypeB}->{$i}->{Record}->{$j} = { Oct => sprintf("%04o", $j) };
+    $opt1->{List}->[$i]->[$j] = "$i:$j";
   }
 }
 
