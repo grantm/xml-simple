@@ -479,7 +479,7 @@ sub XMLout {
 
   # Wrap top level arrayref in a hash
 
-  if(ref($ref) eq 'ARRAY') {
+  if(UNIVERSAL::isa($ref, 'ARRAY')) {
     $ref = { anon => $ref };
   }
 
@@ -497,7 +497,7 @@ sub XMLout {
   # Ensure there are no top level attributes if we're not adding root elements
 
   elsif($self->{opt}->{rootname} eq '') {
-    if(ref($ref) eq 'HASH') {
+    if(UNIVERSAL::isa($ref, 'HASH')) {
       my $refsave = $ref;
       $ref = {};
       foreach (keys(%$refsave)) {
@@ -845,14 +845,14 @@ sub collapse {
     # Combine duplicate attributes into arrayref if required
 
     if(exists($attr->{$key})) {
-      if(ref($attr->{$key}) eq 'ARRAY') {
+      if(UNIVERSAL::isa($attr->{$key}, 'ARRAY')) {
         push(@{$attr->{$key}}, $val);
       }
       else {
         $attr->{$key} = [ $attr->{$key}, $val ];
       }
     }
-    elsif(ref($val) eq 'ARRAY') {  # Handle anonymous arrays
+    elsif(UNIVERSAL::isa($val, 'ARRAY')) {  # Handle anonymous arrays
       $attr->{$key} = [ $val ];
     }
     else {
@@ -879,7 +879,7 @@ sub collapse {
   my $count = 0;
   if($self->{opt}->{keyattr}) {
     while(($key,$val) = each %$attr) {
-      if(ref($val) eq 'ARRAY') {
+      if(UNIVERSAL::isa($val, 'ARRAY')) {
 	$attr->{$key} = $self->array_to_hash($key, $val);
       }
       $count++;
@@ -889,7 +889,7 @@ sub collapse {
 
   # Fold hashes containing a single anonymous array up into just the array
 
-  if($count == 1  and  ref($attr->{anon}) eq 'ARRAY') {
+  if($count == 1  and  UNIVERSAL::isa($attr->{anon}, 'ARRAY')) {
     return($attr->{anon});
   }
 
@@ -934,7 +934,9 @@ sub array_to_hash {
     return($arrayref) unless(exists($self->{opt}->{keyattr}->{$name}));
     ($key, $flag) = @{$self->{opt}->{keyattr}->{$name}};
     for($i = 0; $i < @$arrayref; $i++)  {
-      if(ref($arrayref->[$i]) eq 'HASH' and exists($arrayref->[$i]->{$key})) {
+      if(UNIVERSAL::isa($arrayref->[$i], 'HASH') and
+         exists($arrayref->[$i]->{$key})
+      ) {
 	$val = $arrayref->[$i]->{$key};
 	if(ref($val)) {
 	  if($StrictMode) {
@@ -962,7 +964,7 @@ sub array_to_hash {
 
   else {
     ELEMENT: for($i = 0; $i < @$arrayref; $i++)  {
-      return($arrayref) unless(ref($arrayref->[$i]) eq 'HASH');
+      return($arrayref) unless(UNIVERSAL::isa($arrayref->[$i], 'HASH'));
 
       foreach $key (@{$self->{opt}->{keyattr}}) {
 	if(defined($arrayref->[$i]->{$key}))  {
@@ -1030,7 +1032,7 @@ sub value_to_xml {
 
   # Unfold hash to array if possible
 
-  if(ref($ref) eq 'HASH'               # It is a hash
+  if(UNIVERSAL::isa($ref, 'HASH')      # It is a hash
      and %$ref                         # and it's not empty
      and $self->{opt}->{keyattr}       # and folding is enabled
      and $indent                       # and its not the root element
@@ -1045,7 +1047,7 @@ sub value_to_xml {
 
   # Handle hashrefs
 
-  if(ref($ref) eq 'HASH') {
+  if(UNIVERSAL::isa($ref, 'HASH')) {
 
     # Scan for namespace declaration attributes
 
@@ -1110,7 +1112,7 @@ sub value_to_xml {
       push @result, $indent, '<', $name, $nsdecls;
     }
 
-    if(%$ref) {
+    if(keys %$ref) {
       while(($key, $value) = each(%$ref)) {
 	next if(substr($key, 0, 1) eq '-');
 	if(!defined($value)) {
@@ -1168,7 +1170,7 @@ sub value_to_xml {
 
   # Handle arrayrefs
 
-  elsif(ref($ref) eq 'ARRAY') {
+  elsif(UNIVERSAL::isa($ref, 'ARRAY')) {
     foreach $value (@$ref) {
       if(!ref($value)) {
         push @result,
@@ -1176,7 +1178,7 @@ sub value_to_xml {
 	     ($self->{opt}->{noescape} ? $value : $self->escape_value($value)),
 	     '</', $name, ">\n";
       }
-      elsif(ref($value) eq 'HASH') {
+      elsif(UNIVERSAL::isa($value, 'HASH')) {
 	push @result, $self->value_to_xml($value, $name, $encoded, $indent);
       }
       else {
@@ -1237,7 +1239,7 @@ sub hash_to_array {
 
   foreach $key (keys(%$hashref)) {
     $value = $hashref->{$key};
-    return($hashref) unless(ref($value) eq 'HASH');
+    return($hashref) unless(UNIVERSAL::isa($value, 'HASH'));
 
     if(ref($self->{opt}->{keyattr}) eq 'HASH') {
       return($hashref) unless(defined($self->{opt}->{keyattr}->{$parent}));
