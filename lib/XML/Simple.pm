@@ -24,6 +24,10 @@ Or the object oriented way:
 
     my $xml = $xs->XMLout($hashref [, <options>]);
 
+Or to catch common errors:
+
+    use XML::Simple qw(:strict);
+
 (or see L<"SAX SUPPORT"> for 'the SAX way').
 
 =cut
@@ -46,9 +50,10 @@ use vars qw($VERSION @ISA @EXPORT $PREFERRED_PARSER);
 
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
-$VERSION           = '1.08_01';
+$VERSION           = '2.00';
 $PREFERRED_PARSER  = undef;
 
+my $StrictMode     = 0;
 my %CacheScheme    = (
                        storable => [ \&StorableSave, \&StorableRestore ],
                        memshare => [ \&MemShareSave, \&MemShareRestore ],
@@ -76,6 +81,22 @@ my $bad_def_ns_jcn = '{' . $xmlns_ns . '}';     # LibXML::SAX workaround
 
 my %MemShareCache  = ();
 my %MemCopyCache   = ();
+
+
+##############################################################################
+# Wrapper for Exporter - handles ':strict'
+#
+
+sub import {
+
+  # Handle the :strict tag
+  
+  $StrictMode = 1 if grep(/^:strict$/, @_);
+
+  # Pass everything else to Exporter.pm
+
+  __PACKAGE__->export_to_level(1, grep(!/^:strict$/, @_));
+}
 
 
 ##############################################################################
@@ -625,45 +646,6 @@ sub handle_options  {
     $opt->{parseropts} = [ ];
   }
 
-
-  # Special cleanup for {keyattr} which could be arrayref or hashref or left
-  # to default to arrayref
-
-  if(exists($opt->{keyattr}))  {
-    if(ref($opt->{keyattr})) {
-      if(ref($opt->{keyattr}) eq 'HASH') {
-
-	# Make a copy so we can mess with it
-
-	$opt->{keyattr} = { %{$opt->{keyattr}} };
-
-	
-	# Convert keyattr => { elem => '+attr' }
-	# to keyattr => { elem => [ 'attr', '+' ] } 
-
-	foreach (keys(%{$opt->{keyattr}})) {
-	  if($opt->{keyattr}->{$_} =~ /^(\+|-)?(.*)$/) {
-	    $opt->{keyattr}->{$_} = [ $2, ($1 ? $1 : '') ];
-	  }
-	  else {
-	    delete($opt->{keyattr}->{$_}); # Never reached (famous last words?)
-	  }
-	}
-      }
-      else {
-	if(@{$opt->{keyattr}} == 0) {
-	  delete($opt->{keyattr});
-	}
-      }
-    }
-    else {
-      $opt->{keyattr} = [ $opt->{keyattr} ];
-    }
-  }
-  else  {
-    $opt->{keyattr} = [ @DefKeyAttr ];
-  }
-
   
   # Special cleanup for {forcearray} which could be arrayref or boolean
   # or left to default to 0
@@ -684,7 +666,58 @@ sub handle_options  {
     }
   }
   else {
+    if($StrictMode) {
+      croak "No value specified for 'forcearray' option in call to XML$dirn()";
+    }
     $opt->{forcearray} = 0;
+  }
+
+
+  # Special cleanup for {keyattr} which could be arrayref or hashref or left
+  # to default to arrayref
+
+  if(exists($opt->{keyattr}))  {
+    if(ref($opt->{keyattr})) {
+      if(ref($opt->{keyattr}) eq 'HASH') {
+
+	# Make a copy so we can mess with it
+
+	$opt->{keyattr} = { %{$opt->{keyattr}} };
+
+	
+	# Convert keyattr => { elem => '+attr' }
+	# to keyattr => { elem => [ 'attr', '+' ] } 
+
+	foreach my $el (keys(%{$opt->{keyattr}})) {
+	  if($opt->{keyattr}->{$el} =~ /^(\+|-)?(.*)$/) {
+	    $opt->{keyattr}->{$el} = [ $2, ($1 ? $1 : '') ];
+	    if($StrictMode) {
+	      next if($opt->{forcearray} == 1);
+	      next if(ref($opt->{forcearray}) eq 'HASH'
+		      and $opt->{forcearray}->{$el});
+	      croak "<$el> set in keyattr but not in forcearray";
+	    }
+	  }
+	  else {
+	    delete($opt->{keyattr}->{$el}); # Never reached (famous last words?)
+	  }
+	}
+      }
+      else {
+	if(@{$opt->{keyattr}} == 0) {
+	  delete($opt->{keyattr});
+	}
+      }
+    }
+    else {
+      $opt->{keyattr} = [ $opt->{keyattr} ];
+    }
+  }
+  else  {
+    if($StrictMode) {
+      croak "No value specified for 'keyattr' option in call to XML$dirn()";
+    }
+    $opt->{keyattr} = [ @DefKeyAttr ];
   }
 
 
@@ -906,6 +939,7 @@ sub array_to_hash {
 	delete $hashref->{$val}->{$key} unless($flag eq '+');
       }
       else {
+	croak "<$name> element has no '$key' key attribute" if($StrictMode);
 	carp "Warning: <$name> element has no '$key' key attribute" if($^W);
 	return($arrayref);
       }
@@ -1504,6 +1538,9 @@ becomes more tenuous).  If you find yourself repeatedly having to specify
 the same options, you might like to investigate L<"OPTIONAL OO INTERFACE">
 below.
 
+If you can't be bothered reading the documentation, refer to
+L<"STRICT MODE"> to automatically catch common mistakes.
+
 Because there are so many options, it's hard for new users to know which ones
 are important, so here are the two you really need to know about:
 
@@ -1778,10 +1815,10 @@ attributes.  For example the option 'keyattr => { package => 'id' } will cause
 any package elements to be folded on the 'id' attribute.  No other elements
 which have an 'id' attribute will be folded at all. 
 
-Note: C<XMLin()> will generate a warning if this syntax is used and an element
-which does not have the specified key attribute is encountered (eg: a 'package'
-element without an 'id' attribute, to use the example above).  Warnings will
-only be generated if B<-w> is in force.
+Note: C<XMLin()> will generate a warning (or a fatal error in L<"STRICT MODE">)
+if this syntax is used and an element which does not have the specified key
+attribute is encountered (eg: a 'package' element without an 'id' attribute, to
+use the example above).  Warnings will only be generated if B<-w> is in force.
 
 Two further variations are made possible by prefixing a '+' or a '-' character
 to the attribute name:
@@ -1968,6 +2005,40 @@ you wished to provide an alternative routine for escaping character data (the
 escape_value method) or for building the initial parse tree (the build_tree
 method).
 
+=head1 STRICT MODE
+
+If you import the B<XML::Simple> routines like this:
+
+  use XML::Simple qw(:strict);
+
+the following common mistakes will be detected and treated as fatal errors
+
+=over 4
+
+=item *
+
+Failing to explicitly set the keyattr option - if you can't be bothered reading
+about this option, turn it off with: keyattr => []
+
+=item *
+
+Failing to explicitly set the forcearray option - if you can't be bothered
+reading about this option, set it to the safest mode with: forcearray => 1
+
+=item *
+
+Setting forcearray to an array, but failing to list all the elements from the
+keyattr hash.
+
+=item *
+
+Data error - keyattr is set to say { part => 'partnum' } but the XML contains
+one or more E<lt>partE<gt> elements without a 'partnum' attribute (or nested
+element).  Note: if strict mode is not set but -w is, this condition triggers a
+warning.
+
+=back
+
 =head1 SAX SUPPORT
 
 From version 1.08_01, B<XML::Simple> includes support for SAX (the Simple API
@@ -2090,35 +2161,35 @@ its default rules, you can set the package variable to an empty string.
 =item *
 
 If the 'preferred parser' is set to the string 'XML::Parser', then
-B<XML::Parser> will be used (or C<XMLin()> will die if B<XML::Parser> is not
+L<XML::Parser> will be used (or C<XMLin()> will die if L<XML::Parser> is not
 installed).
 
 =item * 
 
 If the 'preferred parser' is set to some other value, then it is assumed to be
-the name of a SAX parser module and is passed to B<XML::SAX::ParserFactory.>
-If B<XML::SAX> is not installed, or the requested parser module is not
+the name of a SAX parser module and is passed to L<XML::SAX::ParserFactory.>
+If L<XML::SAX> is not installed, or the requested parser module is not
 installed, then C<XMLin()> will die.
 
 =item *
 
 If the 'preferred parser' is not defined at all (the normal default
-state), an attempt will be made to load B<XML::SAX>.  If B<XML::SAX> is
+state), an attempt will be made to load L<XML::SAX>.  If L<XML::SAX> is
 installed, then a parser module will be selected according to
-B<XML::SAX::ParserFactory>'s normal rules (which typically means the last SAX
+L<XML::SAX::ParserFactory>'s normal rules (which typically means the last SAX
 parser installed).
 
 =item *
 
 if the 'preferred parser' is not defined and B<XML::SAX> is not
 installed, then B<XML::Parser> will be used.  C<XMLin()> will die if
-B<XML::Parser> is not installed.
+L<XML::Parser> is not installed.
 
 =back
 
 Note: The B<XML::SAX> distribution includes an XML parser written entirely in
 Perl.  It is very portable but it is not very fast.  You should consider
-installing B<XML::LibXML> or B<XML::SAX::Expat> if they are available for your
+installing L<XML::LibXML> or L<XML::SAX::Expat> if they are available for your
 platform.
 
 =head1 ERROR HANDLING
@@ -2315,21 +2386,21 @@ For event based parsing, use SAX (do not set out to write any new code for
 XML::Parser's handler API - it is obselete).
 
 For tree-based parsing, you could choose between the 'Perlish' approach of
-XML::Twig and more standards based DOM implementations - preferably one with
+L<XML::Twig> and more standards based DOM implementations - preferably one with
 XPath support.
 
 
 =head1 STATUS
 
-This version (1.09) is the current stable version.
+This version (2.00) is the current stable version.
 
 =head1 SEE ALSO
 
-B<XML::Simple> requires either B<XML::Parser> or B<XML::SAX>.
+B<XML::Simple> requires either L<XML::Parser> or L<XML::SAX>.
 
-To generate documents with namespaces, B<XML::NamespaceSupport> is required.
+To generate documents with namespaces, L<XML::NamespaceSupport> is required.
 
-The optional caching functions require B<Storable>.
+The optional caching functions require L<Storable>.
 
 =head1 COPYRIGHT 
 
