@@ -25,8 +25,8 @@ my $last_warning = '';
 $@ = '';
 eval "use XML::Simple;";
 is($@, '', 'Module compiled OK');
-unless($XML::Simple::VERSION eq '2.07') {
-  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.07)");
+unless($XML::Simple::VERSION eq '2.08') {
+  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.08)");
 }
 
 
@@ -980,6 +980,7 @@ $xml = q(<opt>
   <file name="config_file">${conf_dir}/appname.conf</file>
   <file name="log_file">${log_dir}/appname.log</file>
   <file name="debug_file">${log_dir}/appname.dbg</file>
+  <opt docs="${have_docs}" />
 </opt>);
 
 $opt = XMLin($xml, contentkey => '-content');
@@ -988,7 +989,8 @@ is_deeply($opt, {
     config_file => '${conf_dir}/appname.conf',
     log_file    => '${log_dir}/appname.log',
     debug_file  => '${log_dir}/appname.dbg',
-  }
+  },
+  opt => { docs => '${have_docs}' }
 }, 'undefined variables are left untouched');
 
 
@@ -996,14 +998,16 @@ is_deeply($opt, {
 
 $opt = XMLin($xml,
   contentkey => '-content',
-  variables  => { conf_dir => '/etc', log_dir => '/var/log' }
+  variables  => { conf_dir => '/etc', log_dir => '/var/log',
+                  have_docs => 'true' }
 );
 is_deeply($opt, {
   file => {
     config_file => '/etc/appname.conf',
     log_file    => '/var/log/appname.log',
     debug_file  => '/var/log/appname.dbg',
-  }
+  },
+  opt => { docs => 'true' }
 }, 'substitution of pre-defined variables works');
 
 
@@ -1012,9 +1016,11 @@ is_deeply($opt, {
 $xml = q(<opt>
   <dir xsvar="conf_dir">/etc</dir>
   <dir xsvar="log_dir">/var/log</dir>
+  <cfg xsvar="have_docs">false</cfg>
   <file name="config_file">${conf_dir}/appname.conf</file>
   <file name="log_file">${log_dir}/appname.log</file>
   <file name="debug_file">${log_dir}/appname.dbg</file>
+  <opt docs="${have_docs}" />
 </opt>);
 
 $opt = XMLin($xml, contentkey => '-content', varattr => 'xsvar');
@@ -1024,10 +1030,12 @@ is_deeply($opt, {
     log_file    => '/var/log/appname.log',
     debug_file  => '/var/log/appname.dbg',
   },
+  opt => { docs => 'false' },
   dir           => [
                      { xsvar => 'conf_dir', content => '/etc'     },
                      { xsvar => 'log_dir',  content => '/var/log' },
-                   ]
+                   ],
+  cfg           => { xsvar => 'have_docs',  content => 'false'    },
 }, 'variables defined in XML work');
 
 

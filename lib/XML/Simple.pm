@@ -53,7 +53,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $PREFERRED_PARSER);
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
 @EXPORT_OK         = qw(xml_in xml_out);
-$VERSION           = '2.07';
+$VERSION           = '2.08';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
@@ -874,6 +874,16 @@ sub collapse {
   elsif($self->{opt}->{normalisespace} == 2) {
     while(my($key, $value) = each %$attr) {
       $attr->{$key} = $self->normalise_space($value)
+    }
+  }
+
+
+  # Do variable substitutions
+
+  if(my $var = $self->{_var_values}) {
+    while(my($key, $val) = each(%$attr)) {
+      $val =~ s{\$\{(\w+)\}}{ $self->get_var($1) }ge;
+      $attr->{$key} = $val;
     }
   }
 
@@ -2799,7 +2809,7 @@ XPath support.
 
 =head1 STATUS
 
-This version (2.07) is the current stable version.
+This version (2.08) is the current stable version.
 
 =head1 SEE ALSO
 
