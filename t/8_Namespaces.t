@@ -26,6 +26,7 @@ if($XML::NamespaceSupport::VERSION < 1.04) {
 
 print "1..7\n";
 
+$| = 1;
 my $t = 1;
 
 ##############################################################################
@@ -202,8 +203,8 @@ $opt = {
 $xml = XMLout($opt);
 ok(3, $xml =~ m{
   ^\s*<opt
-  \s+{http://www.w3.org/2000/xmlns/}perl="http://www.perl.com/"
-  \s+{http://www.perl.com/}attr="value"
+  (\s+{http://www.w3.org/2000/xmlns/}perl="http://www.perl.com/"
+  |\s+{http://www.perl.com/}attr="value"){2}
   \s*>
   \s*<{http://www.perl.com/}element\s*>data</{http://www.perl.com/}element\s*>
   \s*</opt>
@@ -216,8 +217,8 @@ ok(3, $xml =~ m{
 $xml = XMLout($opt, nsexpand => 1);
 ok(4, $xml =~ m{
   ^\s*<opt
-  \s+xmlns:perl="http://www.perl.com/"
-  \s+perl:attr="value"
+  (\s+xmlns:perl="http://www.perl.com/"
+  |\s+perl:attr="value"){2}
   \s*>
   \s*<perl:element\s*>data</perl:element\s*>
   \s*</opt>
@@ -275,16 +276,20 @@ $opt = {
 };
 
 $xml = XMLout($opt, nsexpand => 1);
+my $prefix = '';
+if($xml =~ m{<list\s+xmlns:(\w+)="http://www.phantom.com/"\s*>}) {
+  $prefix = $1;
+}
 ok(7, $xml =~ m{
   ^\s*<opt
   \s+xmlns="http://www.orgsoc.org/"
   \s*>
-  \s*<list\s+xmlns:(\w+)="http://www.phantom.com/"\s*>
-  \s*<member>Tom</member>
-  \s*<member>Dick</member>
-  \s*<member>Larry</member>
-  \s*<\1:director>Bill</\1:director>
-  \s*<\1:director>Ben</\1:director>
+  \s*<list\s+xmlns:${prefix}="http://www.phantom.com/"\s*>
+  (\s*<member>Tom</member>
+   \s*<member>Dick</member>
+   \s*<member>Larry</member>
+  |\s*<${prefix}:director>Bill</${prefix}:director>
+   \s*<${prefix}:director>Ben</${prefix}:director>){2}
   \s*</list>
   \s*</opt>
   \s*$
