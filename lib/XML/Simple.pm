@@ -53,7 +53,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $PREFERRED_PARSER);
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
 @EXPORT_OK         = qw(xml_in xml_out);
-$VERSION           = '2.09';
+$VERSION           = '2.10';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
@@ -70,7 +70,7 @@ my @KnownOptIn     = qw(keyattr keeproot forcecontent contentkey noattr
 
 my @KnownOptOut    = qw(keyattr keeproot contentkey noattr
                         rootname xmldecl outputfile noescape suppressempty
-                        grouptags nsexpand handler noindent);
+                        grouptags nsexpand handler noindent attrindent nosort);
 
 my @DefKeyAttr     = qw(name key id);
 my $DefRootName    = qq(opt);
@@ -381,9 +381,7 @@ sub StorableRestore {
   return unless(-r $cachefile);
   return unless((stat($cachefile))[9] > (stat($filename))[9]);
 
-  unless($INC{'Storable.pm'}) {
-    require Storable;           # We didn't need it until now
-  }
+  require Storable;           # We didn't need it until now
   
   return(Storable::lock_retrieve($cachefile));
   
@@ -431,9 +429,7 @@ sub MemShareRestore {
 sub MemCopySave {
   my($data, $filename) = @_;
 
-  unless($INC{'Storable.pm'}) {
-    require Storable;           # We didn't need it until now
-  }
+  require Storable;           # We didn't need it until now
   
   $MemCopyCache{$filename} = [time(), Storable::dclone($data)];
 }
@@ -478,7 +474,7 @@ sub XMLout {
     $self = new XML::Simple();
   }
 
-
+  croak "XMLout() requires at least one argument" unless(@_);
   my $ref = shift;
 
   $self->handle_options('out', @_);
@@ -614,12 +610,10 @@ sub handle_options  {
 
   # Merge in options passed to constructor
 
-  if($self->{def_opt}) {
-    foreach (keys(%known_opt)) {
-      unless(exists($opt->{$_})) {
-        if(exists($self->{def_opt}->{$_})) {
-          $opt->{$_} = $self->{def_opt}->{$_};
-        }
+  foreach (keys(%known_opt)) {
+    unless(exists($opt->{$_})) {
+      if(exists($self->{def_opt}->{$_})) {
+        $opt->{$_} = $self->{def_opt}->{$_};
       }
     }
   }
@@ -824,9 +818,7 @@ sub find_xml_file  {
   # If user did not supply a search path, default to current directory
 
   if(!@search_path) {
-    if(-e $file) {
-      return($file);
-    }
+    return($file) if(-e $file);
     croak "File does not exist: $file";
   }
 
@@ -970,13 +962,11 @@ sub collapse {
 
   # Turn arrayrefs into hashrefs if key fields present
 
-  my $count = 0;
   if($self->{opt}->{keyattr}) {
     while(($key,$val) = each %$attr) {
       if(defined($val)  and  UNIVERSAL::isa($val, 'ARRAY')) {
         $attr->{$key} = $self->array_to_hash($key, $val);
       }
-      $count++;
     }
   }
 
@@ -999,6 +989,7 @@ sub collapse {
 
   # Fold hashes containing a single anonymous array up into just the array
 
+  my $count = scalar keys %$attr;
   if($count == 1 
      and  exists $attr->{anon}  
      and  UNIVERSAL::isa($attr->{anon}, 'ARRAY')
@@ -1253,7 +1244,7 @@ sub value_to_xml {
   # Unfold hash to array if possible
 
   if(UNIVERSAL::isa($ref, 'HASH')      # It is a hash
-     and %$ref                         # and it's not empty
+     and keys %$ref                    # and it's not empty
      and $self->{opt}->{keyattr}       # and folding is enabled
      and $indent                       # and its not the root element
   ) {
@@ -1344,15 +1335,22 @@ sub value_to_xml {
     }
 
     if(keys %$ref) {
-      while(($key, $value) = each(%$ref)) {
-	next if(substr($key, 0, 1) eq '-');
+      my $first_arg = 1;
+      foreach my $key ($self->sorted_keys($name, $ref)) {
+        my $value = $ref->{$key};
+        next if(substr($key, 0, 1) eq '-');
         if(!defined($value)) {
           unless(exists($self->{opt}->{suppressempty})
              and !defined($self->{opt}->{suppressempty})
           ) {
             carp 'Use of uninitialized value' if($^W);
           }
-          $value = {};
+          if($key eq $self->{opt}->{contentkey}) {
+            $text_content = '';
+          }
+          else {
+            $value = {};
+          }
         }
         if(ref($value)  or  $self->{opt}->{noattr}) {
           push @nested,
@@ -1364,7 +1362,10 @@ sub value_to_xml {
             $text_content = $value;
           }
           else {
+            push @result, "\n$indent " . ' ' x length($name)
+              if($self->{opt}->{attrindent}  and  !$first_arg);
             push @result, ' ', $key, '="', $value , '"';
+            $first_arg = 0;
           }
         }
       }
@@ -1433,6 +1434,42 @@ sub value_to_xml {
 
 
 ##############################################################################
+# Method: sorted_keys()
+#
+# Returns the keys of the referenced hash sorted into alphabetical order, but
+# with the 'key' key (as in KeyAttr) first, if there is one.
+#
+
+sub sorted_keys {
+  my($self, $name, $ref) = @_;
+
+  return keys %$ref if $self->{opt}->{nosort};
+
+  my %hash = %$ref;
+  my $keyattr = $self->{opt}->{keyattr};
+
+  my @key;
+
+  if(ref $keyattr eq 'HASH') {
+    if(exists $keyattr->{$name} and exists $hash{$keyattr->{$name}->[0]}) {
+      push @key, $keyattr->{$name}->[0];
+      delete $hash{$keyattr->{$name}->[0]};
+    }
+  }
+  elsif(ref $keyattr eq 'ARRAY') {
+    foreach (@{$keyattr}) {
+      if(exists $hash{$_}) {
+        push @key, $_;
+        delete $hash{$_};
+        last;
+      }
+    }
+  }
+
+  return(@key, sort keys %hash);
+}
+
+##############################################################################
 # Method: escape_value()
 #
 # Helper routine for automatically escaping values for XMLout().
@@ -1471,7 +1508,8 @@ sub hash_to_array {
 
   my($key, $value);
 
-  foreach $key (keys(%$hashref)) {
+  my @keys = $self->{opt}->{nosort} ? keys %$hashref : sort keys %$hashref;
+  foreach $key (@keys) {
     $value = $hashref->{$key};
     return($hashref) unless(UNIVERSAL::isa($value, 'HASH'));
 
@@ -1743,8 +1781,8 @@ An IO::Handle object will be read to EOF and its contents parsed. eg:
 =head2 XMLout()
 
 Takes a data structure (generally a hashref) and returns an XML encoding of
-that structure.  If the resulting XML is parsed using C<XMLin()>, it will
-return a data structure equivalent to the original. 
+that structure.  If the resulting XML is parsed using C<XMLin()>, it should
+return a data structure equivalent to the original (see caveats below). 
 
 The C<XMLout()> function can also be used to output the XML as SAX events
 see the C<Handler> option and L<"SAX SUPPORT"> for more details).
@@ -1778,6 +1816,12 @@ approach).
 
 Note also that although you can nest hashes and arrays to arbitrary levels,
 circular data structures are not supported and will cause C<XMLout()> to die.
+
+If you wish to 'round-trip' arbitrary data structures from Perl to XML and back 
+to Perl, then you should probably disable array folding (using the KeyAttr
+option) both with C<XMLout()> and with C<XMLin()>.  If you still don't get the 
+expected results, you may prefer to use L<XML::Dumper> which is designed for
+exactly that purpose.
 
 Refer to L<"WHERE TO FROM HERE?"> if C<XMLout()> is too simple for your needs.
 
@@ -1840,6 +1884,11 @@ Note: option names are no longer case sensitive so you can use the mixed case
 versions shown here; all lower case as required by versions 2.03 and earlier;
 or you can add underscores between the words (eg: key_attr).
 
+
+=head2 AttrIndent => 1 I<# out - handy>
+
+When you are using C<XMLout()>, enable this option to have attributes printed
+one-per-line with sensible indentation rather than all on one line.
 
 =head2 Cache => [ cache schemes ] I<# in - advanced>
 
@@ -2209,6 +2258,29 @@ All hash key/values will be represented as nested elements instead.
 
 When used with C<XMLin()>, any attributes in the XML will be ignored.
 
+=head2 NoEscape => 1 I<# out - seldom used>
+
+By default, C<XMLout()> will translate the characters 'E<lt>', 'E<gt>', '&' and
+'"' to '&lt;', '&gt;', '&amp;' and '&quot' respectively.  Use this option to
+suppress escaping (presumably because you've already escaped the data in some
+more sophisticated manner).
+
+=head2 NoIndent => 1 I<# out - seldom used>
+
+Set this option to 1 to disable C<XMLout()>'s default 'pretty printing' mode.
+With this option enabled, the XML output will all be on one line (unless there
+are newlines in the data) - this may be easier for downstream processing.
+
+=head2 NoSort => 1 I<# out - seldom used>
+
+Newer versions of XML::Simple sort elements and attributes alphabetically (*),
+by default.  Enable this option to suppress the sorting - possibly for
+backwards compatibility.
+
+* Actually, sorting is alphabetical but 'key' attribute or element names (as in
+'KeyAttr') sort first.  Also, when a hash of hashes is 'unfolded', the elements
+are sorted alphabetically by the value of the key field.
+
 =head2 NormaliseSpace => 0 | 1 | 2 I<# in - handy>
 
 This option controls how whitespace in text content is handled.  Recognised
@@ -2235,19 +2307,6 @@ characters to a single space)
 =back
 
 Note: you can spell this option with a 'z' if that is more natural for you.
-
-=head2 NoEscape => 1 I<# out - seldom used>
-
-By default, C<XMLout()> will translate the characters 'E<lt>', 'E<gt>', '&' and
-'"' to '&lt;', '&gt;', '&amp;' and '&quot' respectively.  Use this option to
-suppress escaping (presumably because you've already escaped the data in some
-more sophisticated manner).
-
-=head2 NoIndent => 1 I<# out - seldom used>
-
-Set this option to 1 to disable C<XMLout()>'s default 'pretty printing' mode.
-With this option enabled, the XML output will all be on one line (unless there
-are newlines in the data) - this may be easier for downstream processing.
 
 =head2 NSExpand => 1 I<# in+out handy - SAX only>
 
@@ -2323,7 +2382,8 @@ easier to test for in your code than a hash with no keys.
 
 The option also controls what C<XMLout()> does with undefined values.
 Setting the option to undef causes undefined values to be output as
-empty elements (rather than empty attributes).
+empty elements (rather than empty attributes), it also suppresses the
+generation of warnings about undefined values.
 
 =head2 Variables => { name => value } I<# in - handy>
 
@@ -2813,10 +2873,6 @@ L<XML::Twig> and more standards based DOM implementations - preferably one with
 XPath support.
 
 
-=head1 STATUS
-
-This version (2.09) is the current stable version.
-
 =head1 SEE ALSO
 
 B<XML::Simple> requires either L<XML::Parser> or L<XML::SAX>.
@@ -2830,7 +2886,7 @@ distribution as: L<XML::Simple::FAQ>
 
 =head1 COPYRIGHT 
 
-Copyright 1999-2003 Grant McLean E<lt>grantm@cpan.orgE<gt>
+Copyright 1999-2004 Grant McLean E<lt>grantm@cpan.orgE<gt>
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. 
