@@ -51,7 +51,7 @@ my $preferred_parser = $ENV{XML_SIMPLE_PREFERRED_PARSER} || ' ';
 
 # Print details of installed modules on STDERR
 
-diag(sprintf("\r%-30s %s\n", 'Package', 'Version'));
+diag(sprintf("\r# %-30s %s\n", 'Package', 'Version'));
 foreach my $module (@mod_list) {
   $version{$module} = 'Not Installed' unless(defined($version{$module}));
   $version{$module} .= " (default parser)" if($module eq $default_parser);
