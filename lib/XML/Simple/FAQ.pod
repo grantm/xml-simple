@@ -1,4 +1,7 @@
 package XML::Simple::FAQ;
+1;
+
+__END__
 
 =head1 Frequently Asked Questions about XML::Simple
 
@@ -120,11 +123,10 @@ present an API without a steep learning curve.
 
 Every one of them except XML::Simple :-)
 
-If you're looking for a personal recommendation, I'd suggest you look at
-XML::XPath and XML::Twig.  You could also try using XML::Parser (since you
-probably have it installed already) but may find that the API is a bit
-'low-level'.  There are more pointers on this subject in the 'Where to from
-here?' section of the XML::Simple manual page.
+If you're looking for a recommendation, I'd suggest you look at the Perl-XML
+FAQ at:
+
+  http://www.perlxml.net/perl-xml-faq.dkb
 
 
 =head1 Installation
@@ -132,8 +134,14 @@ here?' section of the XML::Simple manual page.
 
 =head2 How do I install XML::Simple?
 
-You need to have XML::Parser installed first (it comes 'out of the box' with
-ActiveState Perl).  Once you have that ...
+If you're running ActiveState Perl, you've probably already got XML::Simple 
+(although you may want to upgrade to version 1.09 or better for SAX support).
+
+If you do need to install XML::Simple, you'll need to install an XML parser
+module first.  Install either XML::Parser (which you may have already) or
+XML::SAX.  If you install both, XML::SAX will be used by default.
+
+Once you have a parser installed ...
 
 On Unix systems, try:
 
@@ -195,11 +203,18 @@ in Win32 where writes to a file do not affect its modfication timestamp.
 
 If none of these scenarios match your situation, please confirm you're
 running the latest version of XML::Simple and then email the output of
-'make test' to me at grantm@web.co.nz
+'make test' to me at grantm@cpan.org
+
+=head2 Why is XML::Simple so slow?
+
+If you find that XML::Simple is very slow reading XML, the most likely reason
+is that you have XML::SAX installed but no additional SAX parser module.  The
+XML::SAX distribution includes an XML parser written entirely in Perl.  This is
+very portable but not very fast.  For better performance install either
+XML::SAX::Expat or XML::LibXML.
 
 
 =head1 Usage
-
 
 =head2 How do I use XML::Simple?
 
@@ -496,6 +511,12 @@ they'll be represented as an array
 unless you've got array folding enabled, in which case they'll be folded into
 a hash
 
+=item *
+
+empty elements (no text contents B<and> no attributes) will either be
+represented as an empty hash, an empty string or undef - depending on the value
+of the 'suppressempty' option.
+
 =back
 
 If you're in any doubt, use Data::Dumper, eg:
@@ -584,6 +605,15 @@ don't use XML::Simple
 
 =back
 
+
+=head2 Why does XMLout() insert E<lt>nameE<gt> elements (or attributes)?
+
+Try setting keyattr => [].
+
+When you call XMLin() to read XML, the 'keyattr' option controls whether arrays
+get 'folded' into hashes.  Similarly, when you call XMLout(), the 'keyattr'
+option controls whether hashes get 'unfolded' into arrays.  As described above,
+'keyattr' is enabled by default.
 
 =cut
 
