@@ -1,3 +1,5 @@
+# $Id$
+
 package XML::Simple;
 
 =head1 NAME
@@ -1908,7 +1910,7 @@ http://www.perlxml.com/faq/perl-xml-faq.html
 
 =head1 STATUS
 
-This version (1.06) is the current stable version.  
+This version (1.08) is the current stable version.
 
 =head1 SEE ALSO
 

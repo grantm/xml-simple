@@ -3,24 +3,10 @@ DESCRIPTION
   XML::Simple - Easy API to read/write XML (esp config files)
 
 
-  ******* WARNING ******* WARNING ******* WARNING ******* WARNING *******
-
-   This release (1.07b) is a beta release to allow the new SAX code to
-   be tested on as many platforms as possible.  Please try it out if you
-   can and report success/failure to the author.
-
-   For production systems, please use the latest stable release (1.06)
-
-  ******* WARNING ******* WARNING ******* WARNING ******* WARNING *******
-
-
 PREREQUISITES
 
-  XML::Simple requires a module capable of parsing XML - either XML::SAX or
-  XML::Parser must be installed (if you're running ActivePerl, you'll
-  already have XML::Parser installed).
-
-  To generate documents with namespaces, XML::NamespaceSupport is required.
+  XML::Simple requires XML::Parser (if you're running ActivePerl, you'll
+  already have this installed).
 
   The optional caching features of XML::Simple also require Storable.pm.
 
@@ -44,12 +30,7 @@ BUILDING/INSTALLING
 
 STATUS
 
-  This version (1.07b) is a beta release - to allow testing of the new
-  SAX code.  If you encounter any problems installing or running this
-  release, please email the author the complete output of 'make test'
-  (even if your problem does not occur at this point).
-
-  The current stable release is version 1.06.  This version is
+  This version (1.08) is the current stable release.  This version is
   believed to be thread-safe.
 
   Please send any feedback to the author: grantm@cpan.org
@@ -57,20 +38,10 @@ STATUS
 
 NEW IN THIS RELEASE
 
-  - added SAX support including:
-    + using SAX parsers
-    + acting as a SAX handler 
-    + generating SAX events from XMLout() with new Handler option
-    + acting as a SAX filter (via new DataHandler option)
-  - added $ENV{XML_SIMPLE_PREFERRED_PARSER} and
-    $XML::Simple::PREFERRED_PARSER for selecting a parser module
-  - added namespace support (SAX only) with nsexpand option for both 
-    XMLin() and XMLout()
-  - searchpath now defaults to current directory
-  - parseropts option now officially deprecated
+  This is a re-release of 1.06 (stable) with minor updates:
+  - searchpath option now defaults to current directory if not set
+  - fix to Storable test routine for test failures on Win32
   - removed obselete 'convert' script from distribution
-  - many POD updates (more to come)
-
 
   See 'Changes' for a detailed history.
 

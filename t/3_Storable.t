@@ -206,6 +206,7 @@ ok(11, ! -e $XMLFile);                # Original XML file is gone
 open(FILE, ">$XMLFile");              # Re-create it (empty)
 close(FILE);
 PassTime((stat($XMLFile))[9]);        # But ensure cache file is newer
+unlink($CacheFile);                   # Seems to be rqd for test on Win32
 Storable::nstore($Expected, $CacheFile);
 $opt = XMLin($XMLFile, cache => 'storable');
 ok(12, DataCompare($opt, $Expected)); # Got what we expected from the cache
