@@ -56,26 +56,9 @@ BUILDING/INSTALLING
 
 STATUS
 
-  This version (2.11) is the current stable release.
+  This version (2.12) is the current stable release.
 
   Please send any feedback to the author: grantm@cpan.org
-
-
-NEW IN THIS RELEASE
-  - Fix for a broken test
-
-  New in Version 2.10
-  - Added AttrIndent option (patch from Volker Moell)
-  - Hash keys are now sorted alphabetically by default; enable the new
-    NoSort option if you don't want this (patch from Volker Moell)
-  - Fixed bug where disabling array folding broke anonymous array handling
-  - Fixed bug when unfolding a tied hash
-  - SuppressEmpty patch from Douglas Wilson
-  - Numerous test improvements - Devel::Cover rocks!
-  - POD updates
-
-  New in Version 2.09
-  - test fixes and POD updates
 
   See 'Changes' for a detailed history.
 
@@ -86,7 +69,7 @@ NEW IN THIS RELEASE
 
 COPYRIGHT
 
-  Copyright 1999-2003 Grant McLean <grantm@cpan.org>
+  Copyright 1999-2004 Grant McLean <grantm@cpan.org>
 
   This library is free software; you can redistribute it
   and/or modify it under the same terms as Perl itself.
