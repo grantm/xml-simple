@@ -53,7 +53,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $PREFERRED_PARSER);
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
 @EXPORT_OK         = qw(xml_in xml_out);
-$VERSION           = '2.05';
+$VERSION           = '2.06';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
@@ -738,7 +738,7 @@ sub handle_options  {
         foreach my $el (keys(%{$opt->{keyattr}})) {
           if($opt->{keyattr}->{$el} =~ /^(\+|-)?(.*)$/) {
             $opt->{keyattr}->{$el} = [ $2, ($1 ? $1 : '') ];
-            if($StrictMode) {
+            if($StrictMode  and  $dirn eq 'in') {
               next if($opt->{forcearray} == 1);
               next if(ref($opt->{forcearray}) eq 'HASH'
                       and $opt->{forcearray}->{$el});
@@ -973,6 +973,7 @@ sub collapse {
   if($self->{opt}->{grouptags}) {
     while(my($key, $val) = each(%$attr)) {
       next unless(UNIVERSAL::isa($val, 'HASH') and (keys %$val == 1));
+      next unless(exists($self->{opt}->{grouptags}->{$key}));
 
       my($child_key, $child_val) =  %$val;
 
@@ -1962,7 +1963,7 @@ This alternative (and preferred) form of the 'ForceArray' option allows you to
 specify a list of element names which should always be forced into an array
 representation, rather than the 'all or nothing' approach above.
 
-It is also possible (since version 2.05) to include compiled regular
+It is also possible (since version 2.06) to include compiled regular
 expressions in the list - any element names which match the pattern will be
 forced to arrays.  If the list contains only a single regex, then it is not
 necessary to enclose it in an arrayref.  Eg:
@@ -2792,7 +2793,7 @@ XPath support.
 
 =head1 STATUS
 
-This version (2.05) is the current stable version.
+This version (2.06) is the current stable version.
 
 =head1 SEE ALSO
 
@@ -2801,6 +2802,9 @@ B<XML::Simple> requires either L<XML::Parser> or L<XML::SAX>.
 To generate documents with namespaces, L<XML::NamespaceSupport> is required.
 
 The optional caching functions require L<Storable>.
+
+Answers to Frequently Asked Questions about XML::Simple are bundled with this
+distribution as: L<XML::Simple::FAQ>
 
 =head1 COPYRIGHT 
 
