@@ -16,8 +16,10 @@ t/6_ObjIntf.t
 t/7_SaxStuff.t
 t/8_Namespaces.t
 t/9_Strict.t
+t/A_XMLParser.t
 t/desertnet.src
 t/lib/TagsToUpper.pm
 t/subdir/test2.xml
 t/srt.xml
 t/test1.xml
+META.yml                                 Module meta-data (added by MakeMaker)
