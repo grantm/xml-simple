@@ -53,7 +53,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $PREFERRED_PARSER);
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
 @EXPORT_OK         = qw(xml_in xml_out);
-$VERSION           = '2.11';
+$VERSION           = '2.12';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
@@ -66,7 +66,7 @@ my %CacheScheme    = (
 my @KnownOptIn     = qw(keyattr keeproot forcecontent contentkey noattr
                         searchpath forcearray cache suppressempty parseropts
                         grouptags nsexpand datahandler varattr variables
-                        normalisespace normalizespace);
+                        normalisespace normalizespace valueattr);
 
 my @KnownOptOut    = qw(keyattr keeproot contentkey noattr
                         rootname xmldecl outputfile noescape suppressempty
@@ -763,6 +763,15 @@ sub handle_options  {
   }
 
 
+  # Special cleanup for {foldattr} which could be arrayref or hashref
+
+  if(exists($opt->{valueattr})) {
+    if(ref($opt->{valueattr}) eq 'ARRAY') {
+      $opt->{valueattrlist} = {};
+      $opt->{valueattrlist}->{$_} = 1 foreach(@{ delete $opt->{valueattr} });
+    }
+  }
+
   # make sure there's nothing weird in {grouptags}
 
   if($opt->{grouptags} and !UNIVERSAL::isa($opt->{grouptags}, 'HASH')) {
@@ -876,6 +885,16 @@ sub collapse {
     while(my($key, $val) = each(%$attr)) {
       $val =~ s{\$\{(\w+)\}}{ $self->get_var($1) }ge;
       $attr->{$key} = $val;
+    }
+  }
+
+
+  # Roll up 'value' attributes (but only if no nested elements)
+
+  if(!@_  and  keys %$attr == 1) {
+    my($k) = keys %$attr;
+    if($self->{opt}->{valueattrlist}  and $self->{opt}->{valueattrlist}->{$k}) {
+      return $attr->{$k};
     }
   }
 
@@ -1006,6 +1025,19 @@ sub collapse {
       return('');
     }
     return(undef);
+  }
+
+
+  # Roll up named elements with named nested 'value' attributes
+
+  if($self->{opt}->{valueattr}) {
+    while(my($key, $val) = each(%$attr)) {
+      next unless($self->{opt}->{valueattr}->{$key});
+      next unless(UNIVERSAL::isa($val, 'HASH') and (keys %$val == 1));
+      my($k) = keys %$val;
+      next unless($k eq $self->{opt}->{valueattr}->{$key});
+      $attr->{$key} = $val->{$k};
+    }
   }
 
   return($attr)
@@ -2395,6 +2427,40 @@ A 'variable' is any text of the form C<${name}> which occurs in an attribute
 value or in the text content of an element.  If 'name' matches a key in the
 supplied hashref, C<${name}> will be replaced with the corresponding value from
 the hashref.  If no matching key is found, the variable will not be replaced.
+
+=head2 ValueAttr => [ names ] I<# in - handy>
+
+Use this option to deal elements which always have a single attribute and no
+content.  Eg:
+
+  <opt>
+    <colour value="red" />
+    <size   value="XXL" />
+  </opt>
+
+Setting C<< ValueAttr => [ 'value' ] >> will cause the above XML to parse to:
+
+  {
+    colour => 'red',
+    size   => 'XXL'
+  }
+
+instead of this (the default):
+
+  {
+    colour => { value => 'red' },
+    size   => { value => 'XXL' }
+  }
+
+Note: This form of the ValueAttr option is not compatible with C<XMLout()> -
+since the attribute name is discarded at parse time, the original XML cannot be
+reconstructed.
+
+=head2 ValueAttr => { element => attribute, ... } I<# in+out - handy>
+
+This (preferred) form of the ValueAttr option requires you to specify both
+the element and the attribute names.  This is not only safer, it also allows
+the original XML to be reconstructed by C<XMLout()>.
 
 =head2 VarAttr => 'attr_name' I<# in - handy>
 
