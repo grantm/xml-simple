@@ -203,25 +203,19 @@ unlink($XMLFile);
 ok(11, ! -e $XMLFile);                # Original XML file is gone
 open(FILE, ">$XMLFile");              # Re-create it (empty)
 close(FILE);
-utime($t1, $t1, $XMLFile);            # but wind back the clock
-$t0 = (stat($XMLFile))[9];            # Skip these tests if that didn't work
-if($t0 == $t1) {
-  $opt = XMLin($XMLFile, cache => 'storable');
-  ok(12, DataCompare($opt, $Expected)); # Got what we expected from the cache
-  ok(13, ! -s $XMLFile);                # even though the XML file is empty
-}
-else {
-  print STDERR "no utime - skipping test 12...";
-  ok(12, 1);
-  ok(13, 1);
-}
-
+PassTime((stat($XMLFile))[9]);        # But ensure cache file is newer
+Storable::nstore($Expected, $CacheFile);
+$opt = XMLin($XMLFile, cache => 'storable');
+ok(12, DataCompare($opt, $Expected)); # Got what we expected from the cache
+ok(13, ! -s $XMLFile);                # even though the XML file is empty
+$t2 = (stat($CacheFile))[9];
 PassTime($t2);
-open(FILE, ">$XMLFile");              # Write some new data to the XML file
+open(FILE, ">$XMLFile") ||            # Write some new data to the XML file
+  die "open(>$XMLFile): $!\n";
 print FILE qq(<opt one="1" two="2"></opt>\n);
 close(FILE);
 
-$opt = XMLin($XMLFile);            # Parse with no caching
+$opt = XMLin($XMLFile);               # Parse with no caching
 ok(14, DataCompare($opt, { one => 1, two => 2})); # Got what we expected
 $t0 = (stat($CacheFile))[9];          # And timestamp on cache file
 my $s0 = (-s $CacheFile);
