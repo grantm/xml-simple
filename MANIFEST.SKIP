@@ -1,5 +1,7 @@
 \bCVS/
 \.cvsignore$
+\.releaserc$
+\.lwpcookies$
 \.(SKIP|bak|old|swp|gz)$
 ^Makefile$
 ^blib
@@ -7,6 +9,7 @@
 ^benchmark
 ^bugs_and_patches
 ^checklist
+^cover_db
 ^XML-Simple
 ^Simple.pm
 ^runtest
