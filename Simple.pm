@@ -46,7 +46,7 @@ use vars qw($VERSION @ISA @EXPORT $PREFERRED_PARSER);
 
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
-$VERSION           = '1.07b';
+$VERSION           = '1.08_01';
 $PREFERRED_PARSER  = undef;
 
 my %CacheScheme    = (
@@ -68,7 +68,7 @@ my $DefContentKey  = qq(content);
 my $DefXmlDecl     = qq(<?xml version='1.0' standalone='yes'?>);
 
 my $xmlns_ns       = 'http://www.w3.org/2000/xmlns/';
-my $def_ns_jcn     = '{' . $xmlns_ns . '}';
+my $bad_def_ns_jcn = '{' . $xmlns_ns . '}';     # LibXML::SAX workaround
 
 
 ##############################################################################
@@ -295,6 +295,10 @@ sub build_tree_xml_parser {
   };
   if($@) {
     croak "XMLin() requires either XML::SAX or XML::Parser";
+  }
+
+  if($self->{opt}->{nsexpand}) {
+    carp "'nsexpand' option requires XML::SAX";
   }
 
   my $xp = new XML::Parser(Style => 'Tree', @{$self->{opt}->{parseropts}});
@@ -1026,10 +1030,10 @@ sub value_to_xml {
 
       # Look for default namespace declaration first
 
-      if(exists($ref->{$def_ns_jcn})) {
-	$self->{nsup}->declare_prefix('', $ref->{$def_ns_jcn});
-	$nsdecls .= qq( xmlns="$ref->{$def_ns_jcn}"); 
-	delete($ref->{$def_ns_jcn});
+      if(exists($ref->{xmlns})) {
+	$self->{nsup}->declare_prefix('', $ref->{xmlns});
+	$nsdecls .= qq( xmlns="$ref->{xmlns}"); 
+	delete($ref->{xmlns});
       }
       $default_ns_uri = $self->{nsup}->get_uri('');
 
@@ -1243,17 +1247,24 @@ sub start_element {
   my $name = $element->{Name};
   if($self->{opt}->{nsexpand}) {
     $name = $element->{LocalName} || '';
-    if(defined($element->{NamespaceURI})) {
-      $name = "{$element->{NamespaceURI}}$name";
+    if($element->{NamespaceURI}) {
+      $name = '{' . $element->{NamespaceURI} . '}' . $name;
     }
   }
   my $attributes = {};
-  while(my($jcname, $attr) = each(%{$element->{Attributes}})) {
-    if($self->{opt}->{nsexpand}) {
-      $attributes->{$jcname} = $attr->{Value};
-    }
-    else {
-      $attributes->{$attr->{Name}} = $attr->{Value};
+  if($element->{Attributes}) {  # Might be undef
+    foreach my $attr (values %{$element->{Attributes}}) {
+      if($self->{opt}->{nsexpand}) {
+	my $name = $attr->{LocalName} || '';
+	if($attr->{NamespaceURI}) {
+	  $name = '{' . $attr->{NamespaceURI} . '}' . $name
+	}
+	$name = 'xmlns' if($name eq $bad_def_ns_jcn);
+	$attributes->{$name} = $attr->{Value};
+      }
+      else {
+	$attributes->{$attr->{Name}} = $attr->{Value};
+      }
     }
   }
   my $newlist = [ $attributes ];
@@ -1430,7 +1441,8 @@ value' option pairs.  The XML specifier can be one of the following:
 =item A filename
 
 If the filename contains no directory components C<XMLin()> will look for the
-file in each directory in the searchpath (see L<"OPTIONS"> below).  eg:
+file in each directory in the searchpath (see L<"OPTIONS"> below) or in the
+current directory if the searchpath option is not defined.  eg:
 
   $ref = XMLin('/etc/params.xml');
 
@@ -1647,15 +1659,17 @@ As described earlier, C<XMLout> will ignore hash keys starting with a '-'.
 
 =item searchpath => [ list ] (B<in>)
 
-Where the XML is being read from a file, and no path to the file is specified,
-this attribute allows you to specify which directories should be searched.
+If you pass C<XMLin()> a filename, but the filename include no directory
+component, you can use this option to specify which directories should be
+searched to locate the file.  You might use this option to search first in the
+user's home directory, then in a global directory such as /etc.
+
+If a filename is provided to C<XMLin()> but searchpath is not defined, the
+file is assumed to be in the current directory.
 
 If the first parameter to C<XMLin()> is undefined, the default searchpath
 will contain only the directory in which the script itself is located.
 Otherwise the default searchpath will be empty.  
-
-Note: the current directory ('.') is B<not> searched unless it is the directory
-containing the script.
 
 =item forcearray => 1 (B<in>)
 
@@ -1953,8 +1967,8 @@ method).
 
 =head1 SAX SUPPORT
 
-From version 1.07, B<XML::Simple> includes support for SAX (the Simple API for
-XML) - specifically SAX2. 
+From version 1.08_01, B<XML::Simple> includes support for SAX (the Simple API
+for XML) - specifically SAX2. 
 
 In a typical SAX application, an XML Parser (or SAX 'driver') module generates
 SAX events (start of element, character data, end of element, etc) as it parses
@@ -2269,8 +2283,8 @@ XPath support.
 
 =head1 STATUS
 
-This version (1.07b) is a beta (development) release.  The current stable
-version is 1.06.  
+This version (1.08_01) is a beta (development) release.  The current stable
+version is 1.08.  
 
 =head1 SEE ALSO
 
