@@ -1,13 +1,17 @@
 Revision history for Perl module XML::Simple
 
+2.08  Jun 13 2003
+      - fixed variable expansion not happening in attributes (patch from Paul
+        Bussé)
+
 2.07  May 20 2003
       - added test to catch old versions of Storable which lack locking support
       - removed new-style loop which broke on 5.005_03
       - suppress more uninitialised variable warnings
 
 2.06  May 18 2003
-      - fixed strict mode requiring ForceArray on output (fix from Igor Roman 
-        Marino)
+      - fixed strict mode requiring ForceArray on output (fix from Igor Román
+        Mariño)
       - fixed warnings about uninitialised values
       - minor POD update (link to FAQ)
 

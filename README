@@ -56,54 +56,18 @@ BUILDING/INSTALLING
 
 STATUS
 
-  This version (2.06) is the current stable release.
+  This version (2.08) is the current stable release.
 
   Please send any feedback to the author: grantm@cpan.org
 
 
 NEW IN THIS RELEASE
+  - fixed bug - no variable expansion in attributes (patch from Paul Bussé)
+  
+  New in Version 2.07
   - fixed bug which broke compatibility with Perl 5.005_03
   - fixed test problems with Storable
   
-  New in Version 2.06
-  - bug fix for strict mode requiring ForceArray on output
-
-  New in Version 2.05
-  - fixed warnings when NormaliseSpace undefined (reported by Peter
-    Scott and others)
-  - added support for specifying ForceArray using regular expressions
-    (patch from Jim Cromie)
-  - added check to escape_value to guard against undefined argument
-    (reported by Henrik Gemal)
-  - added NoIndent option (requested by Afroze Husain Zubairi)
-
-
-  New in Version 2.04
-  - new 'GroupTags' option (patch from Michel Rodriguez)
-  - optionally collapse 'content' hashes to scalars after folding
-    (also from Michel)
-  - new variable substitution facility via 'Variables' and 'VarAttr'
-    options (Michel again)
-  - new 'NormaliseSpace' option (suggested by Alex Manoussakis)
-  - option names are no longer case-sensitive and can include '_'
-  - XMLin() and XMLout() aliased to xml_in() and xml_out()
-
-  New in Version 2.03
-  - fixed circular reference check which was incorrectly catching
-    'parallel' references (patch from Theo Lengyel)
-
-  New in Version 2.02:
-  - changed Storable calls to use locking
-
-  New in Version 2.01:
-  - fixed bug whereby :strict mode required forcearray on XMLout()
-
-  New in Version 2.00:
-  - First production release with SAX support
-  - Added support for 'strict mode' to catch common mistakes
-  - Removed locking code (as it was incompatible with iThreads)
-  - POD updates
-  - Added (updated) FAQ document to distribution
 
   See 'Changes' for a detailed history.
 
