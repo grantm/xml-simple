@@ -126,7 +126,7 @@ Every one of them except XML::Simple :-)
 If you're looking for a recommendation, I'd suggest you look at the Perl-XML
 FAQ at:
 
-  http://www.perlxml.net/perl-xml-faq.dkb
+  http://perl-xml.sourceforge.net/faq/
 
 
 =head1 Installation
@@ -623,6 +623,23 @@ which case it is represented as a scalar string.
 
 If you would prefer empty elements to be represented as empty strings or the
 undefined value, set the 'suppressempty' option to '' or undef respectively.
+
+=head2 Why is ParserOpts deprecated?
+
+The C<ParserOpts> option is a remnant of the time when XML::Simple only worked
+with the XML::Parser API.  Its value is completely ignored if you're using a
+SAX parser, so writing code which relied on it would bar you from taking
+advantage of SAX.
+
+Even if you are using XML::Parser, it is seldom necessary to pass options to
+the parser object.  A number of people have written to say they use this option
+to set XML::Parser's C<ProtocolEncoding> option.  Don't do that, it's wrong,
+Wrong, WRONG!  Fix the XML document so that it's well-formed and you won't have
+a problem.
+
+Having said all of that, as long as XML::Simple continues to support the
+XML::Parser API, this option will not be removed.  There are currently no plans
+to remove support for the XML::Parser API.
 
 =cut
 
