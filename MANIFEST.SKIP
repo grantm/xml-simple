@@ -1,0 +1,16 @@
+\bCVS/
+\.cvsignore$
+\.(SKIP|bak|old|swp|gz)$
+^Makefile$
+^blib
+^pm_to_blib
+^benchmark
+^bugs_and_patches
+^checklist
+^XML-Simple
+^Simple.pm
+^runtest
+^todo
+^ptst
+^xx
+^OLD
