@@ -22,7 +22,7 @@ if($XML::NamespaceSupport::VERSION < 1.04) {
   plan skip_all => "XML::NamespaceSupport is too old (upgrade to 1.04 or better)";
 }
 
-plan tests => 7;
+plan tests => 8;
 
 
 ##############################################################################
@@ -206,20 +206,24 @@ my $prefix = '';
 if($xml =~ m{<list\s+xmlns:(\w+)="http://www.phantom.com/"\s*>}) {
   $prefix = $1;
 }
+  # regex match split in two to workaround 5.8.1/utf8/regex match prob
 like($xml, qr{
-  ^\s*<opt
+  \s*<opt
   \s+xmlns="http://www.orgsoc.org/"
   \s*>
-  \s*<list\s+xmlns:${prefix}="http://www.phantom.com/"\s*>
+  .*?
+  </list>
+  \s*</opt>
+}sx, 'namespace prefixes are generated automatically (part 1)');
+
+like($xml, qr{
   (\s*<member>Tom</member>
    \s*<member>Dick</member>
    \s*<member>Larry</member>
   |\s*<${prefix}:director>Bill</${prefix}:director>
    \s*<${prefix}:director>Ben</${prefix}:director>){2}
-  \s*</list>
-  \s*</opt>
-  \s*$
-}sx, 'namespace prefixes are generated automatically');
+  #\s*</list>
+}sx, 'namespace prefixes are generated automatically (part 2)');
 
 
 exit(0);

@@ -7,7 +7,7 @@ use IO::File;
 
 $^W = 1;
 
-plan tests => 185;
+plan tests => 190;
 
 
 ##############################################################################
@@ -1074,6 +1074,46 @@ SKIP: {
     </opt>\s*$
   }sx, 'Suppressing sort worked');
 
+}
+
+# Check ValueAttr => {} can expand the relevant records
+
+$ref = { one => 1, two => 2, six => 6 };
+
+$xml = XMLout($ref, ValueAttr => { one => 'value', six => 'num' });
+
+like($xml, qr{
+    ^<opt\s+two="2"\s*>
+      (
+        \s*<one\s+value="1"\s*/>
+      | \s*<six\s+num="6"\s*/>
+      ){2}
+    \s*</opt>$
+  }sx, 'Correct attributes inserted when ValueAttr specified'
+);
+
+# Try out the NumericEscape option
+
+SKIP: {
+    skip "Perl 5.6 or better required", 4 unless($] >= 5.006);
+    
+    $ref = { euro => "\x{20AC}", nbsp => "\x{A0}" };
+
+    $xml = XMLout($ref);   # Default: no numeric escaping
+    my $ents = join ',', sort ($xml =~ m{&#(\d+);}g);
+    is($ents, '', "No numeric escaping by default");
+
+    $xml = XMLout($ref, NumericEscape => 0);
+    $ents = join ',', sort ($xml =~ m{&#(\d+);}g);
+    is($ents, '', "No numeric escaping: explicit");
+
+    $xml = XMLout($ref, NumericEscape => 2);
+    $ents = join ',', sort ($xml =~ m{&#(\d+);}g);
+    is($ents, '160,8364', "Level 2 numeric escaping looks good");
+
+    $xml = XMLout($ref, NumericEscape => 1);
+    $ents = join ',', sort ($xml =~ m{&#(\d+);}g);
+    is($ents, '8364', "Level 1 numeric escaping looks good");
 }
 
 # 'Stress test' with a data structure that maps to several thousand elements.
