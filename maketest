@@ -8,6 +8,7 @@
 #############################################################################
 
 use strict;
+use File::Spec;
 use Test::Harness qw(&runtests $verbose);
 
 $verbose = 0;
