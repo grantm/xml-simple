@@ -53,7 +53,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $PREFERRED_PARSER);
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
 @EXPORT_OK         = qw(xml_in xml_out);
-$VERSION           = '2.13';
+$VERSION           = '2.14';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
@@ -358,9 +358,13 @@ sub StorableSave {
 
   require Storable;           # We didn't need it until now
 
-  # If the following line fails for you, your Storable.pm is old - upgrade
-  
-  Storable::lock_nstore($data, $cachefile);
+  if ('VMS' eq $^O) {
+    Storable::nstore($data, $cachefile);
+  }
+  else {
+    # If the following line fails for you, your Storable.pm is old - upgrade
+    Storable::lock_nstore($data, $cachefile);
+  }
   
 }
 
@@ -384,7 +388,12 @@ sub StorableRestore {
 
   require Storable;           # We didn't need it until now
   
-  return(Storable::lock_retrieve($cachefile));
+  if ('VMS' eq $^O) {
+    return(Storable::retrieve($cachefile));
+  }
+  else {
+    return(Storable::lock_retrieve($cachefile));
+  }
   
 }
 
