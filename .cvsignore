@@ -4,11 +4,10 @@ benchmark
 blib
 blibdirs
 checklist
+cover_db
 pm_to_blib
 *.tar.gz
 XML-Simple-*
 bugs_and_patches
 ptst
-xml-simple.html
-maintenance
 xx
