@@ -4,7 +4,7 @@
 use strict;
 use Test::More;
 
-plan tests => 15;
+plan tests => 37;
 
 
 ##############################################################################
@@ -108,6 +108,202 @@ eval {
 isnt($@, '', 'key attribute not a scalar was a fatal error');
 like($@, qr/<item> element has non-scalar 'name' key attribute/,
   'with the correct error message');
+
+
+##############################################################################
+# Now confirm that XMLout gets checked too
+#
+
+
+# Check that the basic functionality still works under :strict
+
+my $ref = {
+  person => [
+    { name => 'bob' },
+    { name => 'kate' },
+  ]
+};
+
+$@ = '';
+$xml = eval {
+  XMLout($ref, keyattr => {}, rootname => 'list');
+};
+is($@, '', 'XMLout() did not fail');
+
+like($xml, qr{
+      ^\s*<list\s*>
+      \s*<person\s+name="bob"\s*/>
+      \s*<person\s+name="kate"\s*/>
+      \s*</list\s*>\s*$
+    }xs, 'and managed to produce the expected results');
+
+
+# Confirm that keyattr cannot be omitted
+
+eval {
+  XMLout($ref, rootname => 'list');
+};
+
+isnt($@, '', 'omitting keyattr was a fatal error');
+like($@, qr/No value specified for 'keyattr'/,
+  'with the correct error message');
+
+
+##############################################################################
+# Now repeat all that using the OO syntax
+##############################################################################
+
+# Check that the basic functionality still works
+
+$xml = q(<opt name1="value1" name2="value2"></opt>);
+
+my $xs = XML::Simple->new(forcearray => 1, keyattr => {});
+
+$@ = '';
+my $opt = eval {
+  $xs->XMLin($xml);
+};
+is($@, '', '$xs->XMLin() did not fail');
+
+my $keys = join(' ', sort keys %$opt);
+
+is($keys, 'name1 name2', 'and managed to produce the expected results');
+
+# Confirm that forcearray cannot be omitted
+
+$xs = XML::Simple->new(keyattr => {});
+
+$@ = '';
+eval {
+  $xs->XMLin($xml);
+};
+
+isnt($@, '', 'omitting forcearray was a fatal error');
+like($@, qr/No value specified for 'forcearray'/, 
+  'with the correct error message');
+
+
+# Confirm that keyattr cannot be omitted
+
+$xs = XML::Simple->new(forcearray => []);
+
+eval {
+  $xs->XMLin($xml);
+};
+
+isnt($@, '', 'omitting keyattr was a fatal error');
+like($@, qr/No value specified for 'keyattr'/,
+  'with the correct error message');
+
+
+# Confirm that element names from keyattr cannot be omitted from forcearray
+
+$xs = XML::Simple->new(keyattr => { part => 'partnum' }, forcearray => 0);
+
+eval {
+  $xs->XMLin($xml);
+};
+
+isnt($@, '', 'omitting forcearray for elements in keyattr was a fatal error');
+like($@, qr/<part> set in keyattr but not in forcearray/,
+  'with the correct error message');
+
+
+$xs = XML::Simple->new(keyattr => { part => 'partnum' }, forcearray => ['x','y']);
+
+eval {
+  $xs->XMLin($xml);
+};
+
+isnt($@, '', 'omitting keyattr elements from forcearray was a fatal error');
+like($@, qr/<part> set in keyattr but not in forcearray/,
+  'with the correct error message');
+
+
+# Confirm that missing key attributes are detected
+
+$xml = q(
+<opt>
+  <part partnum="12345" desc="Thingy" />
+  <part partnum="67890" desc="Wotsit" />
+  <part desc="Fnurgle" />
+</opt>
+);
+
+$xs = XML::Simple->new(keyattr => { part => 'partnum' }, forcearray => 1);
+eval {
+  $xs->XMLin($xml);
+};
+
+isnt($@, '', 'key attribute missing from names element was a fatal error');
+like($@, qr/<part> element has no 'partnum' key attribute/,
+  'with the correct error message');
+
+
+# Confirm that stringification of references is trapped
+
+$xml = q(
+<opt>
+  <item>
+    <name><firstname>Bob</firstname></name>
+    <age>21</age>
+  </item>
+</opt>
+);
+
+$xs = XML::Simple->new(keyattr => { item => 'name' }, forcearray => ['item']);
+
+eval {
+  $xs->XMLin($xml);
+};
+
+isnt($@, '', 'key attribute not a scalar was a fatal error');
+like($@, qr/<item> element has non-scalar 'name' key attribute/,
+  'with the correct error message');
+
+
+##############################################################################
+# Now confirm that XMLout gets checked too
+#
+
+
+# Check that the basic functionality still works under :strict
+
+$ref = {
+  person => [
+    { name => 'bob' },
+    { name => 'kate' },
+  ]
+};
+
+$xs = XML::Simple->new(keyattr => {}, rootname => 'list');
+
+$@ = '';
+$xml = eval {
+  $xs->XMLout($ref);
+};
+is($@, '', 'XMLout() did not fail');
+
+like($xml, qr{
+      ^\s*<list\s*>
+      \s*<person\s+name="bob"\s*/>
+      \s*<person\s+name="kate"\s*/>
+      \s*</list\s*>\s*$
+    }xs, 'and managed to produce the expected results');
+
+
+# Confirm that keyattr cannot be omitted
+
+$xs = XML::Simple->new(rootname => 'list');
+
+eval {
+  $xs->XMLout($ref);
+};
+
+isnt($@, '', 'omitting keyattr was a fatal error');
+like($@, qr/No value specified for 'keyattr'/,
+  'with the correct error message');
+
 
 exit(0);
 
