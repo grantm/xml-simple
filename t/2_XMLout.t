@@ -7,7 +7,7 @@ use IO::File;
 
 $^W = 1;
 
-plan tests => 193;
+plan tests => 196;
 
 
 ##############################################################################
@@ -654,21 +654,20 @@ like($_, qr{^\s*<(\w+)\s*>\s*<nnn>\s*<nnn>\s*</\1\s*>\s*$}, 'document OK');
   local($^W) = 1;
   my $warn = '';
   local $SIG{__WARN__} = sub { $warn = $_[0] };
-  $_ = eval {
-    $ref = { 'tag' => undef };
-    XMLout($ref);
-  };
+  $ref = { 'one' => 1, 'two' => undef };
+  my $expect = qr/^<\w+(\s+one="1"|\s+two=""){2}/;
+
+  $_ = XMLout($ref);
   like($warn, qr/Use of uninitialized value/, 
     'caught warning re uninitialised value');
+  like($_, $expect, 'undef maps to any empty attribute by default');
 
   # unless warnings are disabled
   $^W = 0;
   $warn = '';
-  $_ = eval {
-    $ref = { 'tag' => undef };
-    XMLout($ref);
-  };
+  $_ = XMLout($ref);
   is($warn, '', 'no warning re uninitialised value if warnings off');
+  like($_, $expect, 'undef still maps to any empty attribute');
 }
 
 
@@ -678,6 +677,14 @@ $ref = { 'tag' => undef };
 $_ = XMLout($ref, suppressempty => undef);
 like($_, qr{^\s*<(\w*)\s*>\s*<tag\s*></tag\s*>\s*</\1\s*>\s*$}s,
   'uninitialiased values successfully mapped to empty elements');
+
+
+# Set suppressempty to 1 to not output anything for undef
+
+$ref = { 'one' => 1, 'two' => undef };
+$_ = XMLout($ref, suppressempty => 1, noattr => 1);
+like($_, qr{^\s*<(\w*)\s*>\s*<one\s*>1</one\s*>\s*</\1\s*>\s*$}s,
+  'uninitialiased values successfully skipped');
 
 
 # Test the keeproot option

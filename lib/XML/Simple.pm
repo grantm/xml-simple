@@ -1375,6 +1375,7 @@ sub value_to_xml {
         my $value = $ref->{$key};
         next if(substr($key, 0, 1) eq '-');
         if(!defined($value)) {
+          next if $self->{opt}->{suppressempty};
           unless(exists($self->{opt}->{suppressempty})
              and !defined($self->{opt}->{suppressempty})
           ) {
@@ -1384,7 +1385,7 @@ sub value_to_xml {
             $text_content = '';
           }
           else {
-            $value = {};
+            $value = exists($self->{opt}->{suppressempty}) ? {} : '';
           }
         }
 
@@ -2477,10 +2478,11 @@ string will cause empty elements to be represented as the undefined value or
 the empty string respectively.  The latter two alternatives are a little
 easier to test for in your code than a hash with no keys.
 
-The option also controls what C<XMLout()> does with undefined values.
-Setting the option to undef causes undefined values to be output as
-empty elements (rather than empty attributes), it also suppresses the
-generation of warnings about undefined values.
+The option also controls what C<XMLout()> does with undefined values.  Setting
+the option to undef causes undefined values to be output as empty elements
+(rather than empty attributes), it also suppresses the generation of warnings
+about undefined values.  Setting the option to a true value (eg: 1) causes
+undefined values to be skipped altogether on output.
 
 =head2 ValueAttr => [ names ] I<# in - handy>
 
