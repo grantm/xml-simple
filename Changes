@@ -1,5 +1,15 @@
 Revision history for Perl module XML::Simple
 
+2.13  Nov 17 2004
+      - Fixed bug where NoIndent broke KeyAttr (reported by David Haas)
+      - Added copy_hash helper method which may be overridden to avoid
+        tied hashes becoming untied during XMLout (patch from Jan Sundberg)
+      - Fixed bug where GroupTags corrupted source hashref in XMLout
+        (reported by Bram)
+      - Tweaks to SuppressEmpty for undef with XMLout (report from jamesb),
+        behaviour now matches docs and additional behaviour of setting
+        option to 1 will skip undefined values altogether
+
 2.12  Apr 05 2004
       - added NumericEscape option
       - added ValueAttr option (patch from Anton Berezin)
