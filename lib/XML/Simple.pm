@@ -2047,6 +2047,12 @@ one or more E<lt>partE<gt> elements without a 'partnum' attribute (or nested
 element).  Note: if strict mode is not set but -w is, this condition triggers a
 warning.
 
+=item * 
+
+Data error - as above, but value of key attribute (eg: partnum) is not a 
+scalar string (due to nested elements etc).  This will also trigger a warning
+if strict mode is not enabled.
+
 =back
 
 =head1 SAX SUPPORT
