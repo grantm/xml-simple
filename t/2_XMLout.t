@@ -326,8 +326,11 @@ $_ = eval {
 ok(defined($_), 'repetitive (non-circular) data structure not fatal');
 like($_, qr{^
 <opt>
-  \s*<a\s+alpha="1"\s*/>
-  \s*<b\s+alpha="1"\s*/>
+  (
+    \s*<a\s+alpha="1"\s*/>
+  |
+    \s*<b\s+alpha="1"\s*/>
+  ){2}
 \s*</opt>
 }xs, 'and encodes as expected');
 
