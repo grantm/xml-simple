@@ -475,7 +475,7 @@ using array folding, you should always turn on the forcearray option.
 You probably want to be as specific as you can be too.  For instance, the
 safest way to parse the E<lt>catalogE<gt> example above would be:
 
-  my $catalog = XMLin($xml, keyattr => { part => 'partnum'}
+  my $catalog = XMLin($xml, keyattr => { part => 'partnum'},
                             forcearray => ['part']);
 
 By using the hashref for keyattr, you can specify that only E<lt>partE<gt>
