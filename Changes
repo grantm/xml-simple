@@ -1,5 +1,8 @@
 Revision history for Perl module XML::Simple
 
+2.14  Jan 29 2005
+      - unlink and lock fixes for VMS (patch from Peter (Stig) Edwards)
+
 2.13  Nov 17 2004
       - Fixed bug where NoIndent broke KeyAttr (reported by David Haas)
       - Added copy_hash helper method which may be overridden to avoid
