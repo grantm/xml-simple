@@ -4,7 +4,7 @@
 use strict;
 use Test::More;
 
-plan tests => 13;
+plan tests => 15;
 
 
 ##############################################################################
@@ -87,6 +87,26 @@ eval {
 
 isnt($@, '', 'key attribute missing from names element was a fatal error');
 like($@, qr/<part> element has no 'partnum' key attribute/,
+  'with the correct error message');
+
+
+# Confirm that stringification of references is trapped
+
+$xml = q(
+<opt>
+  <item>
+    <name><firstname>Bob</firstname></name>
+    <age>21</age>
+  </item>
+</opt>
+);
+
+eval {
+  $opt = XMLin($xml, keyattr => { item => 'name' }, forcearray => ['item']);
+};
+
+isnt($@, '', 'key attribute not a scalar was a fatal error');
+like($@, qr/<item> element has non-scalar 'name' key attribute/,
   'with the correct error message');
 
 exit(0);

@@ -934,6 +934,15 @@ sub array_to_hash {
     for($i = 0; $i < @$arrayref; $i++)  {
       if(ref($arrayref->[$i]) eq 'HASH' and exists($arrayref->[$i]->{$key})) {
 	$val = $arrayref->[$i]->{$key};
+	if(ref($val)) {
+	  if($StrictMode) {
+	    croak "<$name> element has non-scalar '$key' key attribute";
+	  }
+	  if($^W) {
+	    carp "Warning: <$name> element has non-scalar '$key' key attribute";
+	  }
+	  return($arrayref);
+	}
 	$hashref->{$val} = { %{$arrayref->[$i]} };
 	$hashref->{$val}->{"-$key"} = $hashref->{$val}->{$key} if($flag eq '-');
 	delete $hashref->{$val}->{$key} unless($flag eq '+');
@@ -956,6 +965,7 @@ sub array_to_hash {
       foreach $key (@{$self->{opt}->{keyattr}}) {
 	if(defined($arrayref->[$i]->{$key}))  {
 	  $val = $arrayref->[$i]->{$key};
+	  return($arrayref) if(ref($val));
 	  $hashref->{$val} = { %{$arrayref->[$i]} };
 	  delete $hashref->{$val}->{$key};
 	  next ELEMENT;

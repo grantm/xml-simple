@@ -15,7 +15,7 @@ unless(-e $XMLFile) {
   plan skip_all => 'Test data missing';
 }
 
-plan tests => 64;
+plan tests => 66;
 
 
 $@ = '';
@@ -315,6 +315,34 @@ $target = {
 };
 $opt = XMLin($xml, forcearray => 1, keyattr => { 'car' => '+license', 'option' => '-pn' });
 is_deeply($opt, $target, "same again but with '+' prefix to copy keys");
+
+
+# Confirm the stringifying references bug is fixed
+
+my $xml = q(
+  <opt>
+    <item>
+      <name><firstname>Bob</firstname></name>
+      <age>21</age>
+    </item>
+    <item>
+      <name><firstname>Kate</firstname></name>
+      <age>22</age>
+    </item>
+  </opt>);
+
+$target = {
+  item => [
+    { age => '21', name => { firstname => 'Bob'} },
+    { age => '22', name => { firstname => 'Kate'} },
+  ]
+};
+
+$opt = XMLin($xml);
+is_deeply($opt, $target, "did not fold on default key with non-scalar value");
+
+$opt = XMLin($xml, keyattr => { item => 'name' });
+is_deeply($opt, $target, "did not fold on specific key with non-scalar value");
 
 
 # Make sure that the root element name is preserved if we ask for it
