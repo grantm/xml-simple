@@ -1,110 +1,30 @@
 # $Id$
+# vim: syntax=perl
 
 use strict;
-
+use Test::More;
 use File::Spec;
 use IO::File;
 
 eval { require XML::SAX; };
 if($@) {
-  print STDERR "no XML::SAX...";
-  print "1..0\n";
-  exit 0;
+  plan skip_all => 'no XML::SAX';
 }
 
 eval { require XML::NamespaceSupport; };
 if($@) {
-  print STDERR "no XML::NamespaceSupport...";
-  print "1..0\n";
-  exit 0;
+  plan skip_all => "no XML::NamespaceSupport";
 }
 if($XML::NamespaceSupport::VERSION < 1.04) {
-  print STDERR "XML::NamespaceSupport is too old (upgrade to 1.04 or better)...";
-  print "1..0\n";
-  exit 0;
+  plan skip_all => "XML::NamespaceSupport is too old (upgrade to 1.04 or better)";
 }
 
-print "1..7\n";
+plan tests => 7;
 
-$| = 1;
-my $t = 1;
 
 ##############################################################################
 #                   S U P P O R T   R O U T I N E S
 ##############################################################################
-
-##############################################################################
-# Print out 'n ok' or 'n not ok' as expected by test harness.
-# First arg is test number (n).  If only one following arg, it is interpreted
-# as true/false value.  If two args, equality = true.
-#
-
-sub ok {
-  my($n, $x, $y) = @_;
-  die "Sequence error got $n expected $t" if($n != $t);
-  $x = 0 if(@_ > 2  and  $x ne $y);
-  print(($x ? '' : 'not '), 'ok ', $t++, "\n");
-}
-
-
-##############################################################################
-# Take two scalar values (may be references) and compare them (recursively
-# if necessary) returning 1 if same, 0 if different.
-#
-
-sub DataCompare {
-  my($x, $y) = @_;
-
-  my($i);
-
-  if(!ref($x)) {
-    return(1) if($x eq $y);
-    print STDERR "$t:DataCompare: $x != $y\n";
-    return(0);
-  }
-
-  if(ref($x) eq 'ARRAY') {
-    unless(ref($y) eq 'ARRAY') {
-      print STDERR "$t:DataCompare: expected arrayref, got: $y\n";
-      return(0);
-    }
-    if(scalar(@$x) != scalar(@$y)) {
-      print STDERR "$t:DataCompare: expected ", scalar(@$x),
-                   " element(s), got: ", scalar(@$y), "\n";
-      return(0);
-    }
-    for($i = 0; $i < scalar(@$x); $i++) {
-      DataCompare($x->[$i], $y->[$i]) || return(0);
-    }
-    return(1);
-  }
-
-  if(ref($x) eq 'HASH') {
-    unless(ref($y) eq 'HASH') {
-      print STDERR "$t:DataCompare: expected hashref, got: $y\n";
-      return(0);
-    }
-    if(scalar(keys(%$x)) != scalar(keys(%$y))) {
-      print STDERR "$t:DataCompare: expected ", scalar(keys(%$x)),
-                   " key(s) (", join(', ', keys(%$x)),
-		   "), got: ",  scalar(keys(%$y)), " (", join(', ', keys(%$y)),
-		   ")\n";
-      return(0);
-    }
-    foreach $i (keys(%$x)) {
-      unless(exists($y->{$i})) {
-	print STDERR "$t:DataCompare: missing hash key - {$i}\n";
-	return(0);
-      }
-      DataCompare($x->{$i}, $y->{$i}) || return(0);
-    }
-    return(1);
-  }
-
-  print STDERR "Don't know how to compare: " . ref($x) . "\n";
-  return(0);
-}
-
 
 ##############################################################################
 # Copy a file
@@ -166,7 +86,7 @@ my $expected = {
 };
 
 my $opt = XMLin($xml);
-ok(1, DataCompare($opt, $expected));  # Got what we expected
+is_deeply($opt, $expected, 'qnames are not expanded by default');
 
 
 # Try again with nsexpand option set
@@ -189,7 +109,7 @@ $expected = {
 };
 
 $opt = XMLin($xml, nsexpand => 1);
-ok(2, DataCompare($opt, $expected));  # Got what we expected
+is_deeply($opt, $expected, 'qnames are expanded on request');
 
 
 # Confirm that output expansion does not occur by default
@@ -201,7 +121,7 @@ $opt = {
 };
 
 $xml = XMLout($opt);
-ok(3, $xml =~ m{
+like($xml, qr{
   ^\s*<opt
   (\s+{http://www.w3.org/2000/xmlns/}perl="http://www.perl.com/"
   |\s+{http://www.perl.com/}attr="value"){2}
@@ -209,13 +129,13 @@ ok(3, $xml =~ m{
   \s*<{http://www.perl.com/}element\s*>data</{http://www.perl.com/}element\s*>
   \s*</opt>
   \s*$
-}sx);
+}sx, 'clarkian names not converted to qnames on output by default');
 
 
 # Confirm nsexpand option works on output
 
 $xml = XMLout($opt, nsexpand => 1);
-ok(4, $xml =~ m{
+ok($xml =~ m{
   ^\s*<opt
   (\s+xmlns:perl="http://www.perl.com/"
   |\s+perl:attr="value"){2}
@@ -223,7 +143,7 @@ ok(4, $xml =~ m{
   \s*<perl:element\s*>data</perl:element\s*>
   \s*</opt>
   \s*$
-}sx);
+}sx, 'clarkian names are converted to qnames on output on request');
 
 
 # Check that default namespace is correctly read in ...
@@ -240,18 +160,18 @@ $xml = q(<opt xmlns="http://www.orgsoc.org/">
 $expected = {
   'xmlns' => 'http://www.orgsoc.org/',
   '{http://www.orgsoc.org/}list' => {
-    '{http://www.orgsoc.org/}member' => [ 'Tom', 'Dick', 'Larry' ]
+    '{http://www.orgsoc.org/}member' => [ 'Tom', 'Dick', 'Larry' ],
   }
 };
 
 $opt = XMLin($xml, nsexpand => 1);
-ok(5, DataCompare($opt, $expected));
+is_deeply($opt, $expected, 'expansion of default namespace works');
 
 
 # ... and written out
 
 $xml = XMLout($opt, nsexpand => 1);
-ok(6, $xml =~ m{
+like($xml, qr{
   ^\s*<opt
   \s+xmlns="http://www.orgsoc.org/"
   \s*>
@@ -262,7 +182,7 @@ ok(6, $xml =~ m{
   \s*</list>
   \s*</opt>
   \s*$
-}sx);
+}sx, 'default namespaces are output correctly too');
 
 
 # Check that the autogeneration of namespaces works as we expect
@@ -280,7 +200,7 @@ my $prefix = '';
 if($xml =~ m{<list\s+xmlns:(\w+)="http://www.phantom.com/"\s*>}) {
   $prefix = $1;
 }
-ok(7, $xml =~ m{
+like($xml, qr{
   ^\s*<opt
   \s+xmlns="http://www.orgsoc.org/"
   \s*>
@@ -293,7 +213,7 @@ ok(7, $xml =~ m{
   \s*</list>
   \s*</opt>
   \s*$
-}sx);
+}sx, 'namespace prefixes are generated automatically');
 
 
 exit(0);

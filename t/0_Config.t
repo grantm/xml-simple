@@ -1,9 +1,8 @@
 # $Id$
-
-BEGIN { print "1..1\n"; }
+# vim: syntax=perl
 
 use strict;
-use File::Spec;
+use Test::More tests => 1;
 
 
 # Build up a list of installed modules
@@ -52,14 +51,14 @@ my $preferred_parser = $ENV{XML_SIMPLE_PREFERRED_PARSER} || ' ';
 
 # Print details of installed modules on STDERR
 
-printf STDERR "\r%-30s %s\n", 'Package', 'Version';
+diag(sprintf("\r%-30s %s\n", 'Package', 'Version'));
 foreach my $module (@mod_list) {
   $version{$module} = 'Not Installed' unless(defined($version{$module}));
   $version{$module} .= " (default parser)" if($module eq $default_parser);
   $version{$module} .= " (preferred parser)" if($module eq $preferred_parser);
-  printf STDERR " %-30s %s\n", $module, $version{$module};
+  diag(sprintf(" %-30s %s\n", $module, $version{$module}));
 }
 
 # Housekeeping
 
-print "ok 1\n";
+ok(1, "Dumped config");

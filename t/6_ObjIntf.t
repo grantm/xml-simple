@@ -1,6 +1,8 @@
 # $Id$
+# vim: syntax=perl
 
 use strict;
+use Test::More tests => 27;
 
 ##############################################################################
 # Derived version of XML::Simple that returns everything in upper case
@@ -66,90 +68,6 @@ sub escape_value {
 
 package main;
 
-BEGIN { print "1..27\n"; }
-
-my $t = 1;
-
-##############################################################################
-#                   S U P P O R T   R O U T I N E S
-##############################################################################
-
-##############################################################################
-# Print out 'n ok' or 'n not ok' as expected by test harness.
-# First arg is test number (n).  If only one following arg, it is interpreted
-# as true/false value.  If two args, equality = true.
-#
-
-sub ok {
-  my($n, $x, $y) = @_;
-  die "Sequence error got $n expected $t" if($n != $t);
-    $x = 0 if(@_ > 2  and  $x ne $y);
-  print(($x ? '' : 'not '), 'ok ', $t++, "\n");
-}
-
-##############################################################################
-# Take two scalar values (may be references) and compare them (recursively
-# if necessary) returning 1 if same, 0 if different.
-#
-
-sub DataCompare {
-  my($x, $y) = @_;
-
-  my($i);
-
-  if(!ref($x)) {
-    return(1) if($x eq $y);
-    print STDERR "$t:DataCompare: $x != $y\n";
-    return(0);
-  }
-
-  if(ref($x) eq 'ARRAY') {
-    unless(ref($y) eq 'ARRAY') {
-      print STDERR "$t:DataCompare: expected arrayref, got: $y\n";
-      return(0);
-    }
-    if(scalar(@$x) != scalar(@$y)) {
-      print STDERR "$t:DataCompare: expected ", scalar(@$x),
-                   " element(s), got: ", scalar(@$y), "\n";
-      return(0);
-    }
-    for($i = 0; $i < scalar(@$x); $i++) {
-      DataCompare($x->[$i], $y->[$i]) || return(0);
-    }
-    return(1);
-  }
-
-  if(ref($x) eq 'HASH') {
-    unless(ref($y) eq 'HASH') {
-      print STDERR "$t:DataCompare: expected hashref, got: $y\n";
-      return(0);
-    }
-    if(scalar(keys(%$x)) != scalar(keys(%$y))) {
-      print STDERR "$t:DataCompare: expected ", scalar(keys(%$x)),
-                   " key(s) (", join(', ', keys(%$x)),
-		   "), got: ",  scalar(keys(%$y)), " (", join(', ', keys(%$y)),
-		   ")\n";
-      return(0);
-    }
-    foreach $i (keys(%$x)) {
-      unless(exists($y->{$i})) {
-	print STDERR "$t:DataCompare: missing hash key - {$i}\n";
-	return(0);
-      }
-      DataCompare($x->{$i}, $y->{$i}) || return(0);
-    }
-    return(1);
-  }
-
-  print STDERR "Don't know how to compare: " . ref($x) . "\n";
-  return(0);
-}
-
-
-##############################################################################
-# Start the tests
-#
-
 use XML::Simple;
 
 my $xml = q(<cddatabase>
@@ -185,14 +103,14 @@ my %opts2 = (
 
 my $xs1 = new XML::Simple( %opts1 );
 my $xs2 = new XML::Simple( %opts2 );
-ok(1, $xs1);                            # Object created successfully
-ok(2, $xs2);                            # and another
-ok(3, DataCompare(\%opts1, {            # Options values not corrupted
+isa_ok($xs1, 'XML::Simple', 'object one');
+isa_ok($xs2, 'XML::Simple', 'object two');
+is_deeply(\%opts1, {
   keyattr => { disc => 'cddbid', track => 'number' },
   keeproot => 1, 
   contentkey => 'title',
   forcearray => [ qw(disc album) ] 
-}));
+}, 'options hash was not corrupted');
 
 my $exp1 = {
   'cddatabase' => {
@@ -221,7 +139,7 @@ my $exp1 = {
 };
 
 my $ref1 = $xs1->XMLin($xml);
-ok(4, DataCompare($ref1, $exp1));       # Parsed to what we expected
+is_deeply($ref1, $exp1, 'parsed expected data via object 1');
 
 
 # Try using the other object
@@ -250,15 +168,14 @@ my $exp2 = {
 };
 
 my $ref2 = $xs2->XMLin($xml);
-ok(5, DataCompare($ref2, $exp2));       # Parsed to what we expected
-
+is_deeply($ref2, $exp2, 'parsed expected data via object 2');
 
 
 # Confirm default options in object merge correctly with options as args
 
 $ref1 = $xs1->XMLin($xml, keyattr => [], forcearray => 0);
 
-ok(6, DataCompare($ref1, {              # Parsed to what we expected
+is_deeply($ref1, {              # Parsed to what we expected
   'cddatabase' => {
     'disc' => {
       'album' => 'Automatic For The People',
@@ -281,37 +198,37 @@ ok(6, DataCompare($ref1, {              # Parsed to what we expected
       ]
     }
   }
-}));
+}, 'successfully merged options');
 
 
 # Confirm that default options in object still work as expected
 
 $ref1 = $xs1->XMLin($xml);
-ok(7, DataCompare($ref1, $exp1));       # Still parsed to what we expected
+is_deeply($ref1, $exp1, 'defaults were not affected by merge');
 
 
 # Confirm they work for output too
 
 $_ = $xs1->XMLout($ref1);
 
-ok(8,  s{<track number="1">Drive</track>}                         {<NEST/>});
-ok(9,  s{<track number="2">Try Not To Breathe</track>}            {<NEST/>});
-ok(10, s{<track number="3">The Sidewinder Sleeps Tonite</track>}  {<NEST/>});
-ok(11, s{<track number="4">Everybody Hurts</track>}               {<NEST/>});
-ok(12, s{<track number="5">New Orleans Instrumental No. 1</track>}{<NEST/>});
-ok(13, s{<track number="6">Sweetness Follows</track>}             {<NEST/>});
-ok(14, s{<track number="7">Monty Got A Raw Deal</track>}          {<NEST/>});
-ok(15, s{<track number="8">Ignoreland</track>}                    {<NEST/>});
-ok(16, s{<track number="9">Star Me Kitten</track>}                {<NEST/>});
-ok(17, s{<track number="10">Man On The Moon</track>}              {<NEST/>});
-ok(18, s{<track number="11">Nightswimming</track>}                {<NEST/>});
-ok(19, s{<track number="12">Find The River</track>}               {<NEST/>});
-ok(20, s{<album>Automatic For The People</album>}                 {<NEST/>});
-ok(21, s{cddbid="960b750c"}{ATTR});
-ok(22, s{id="9362-45055-2"}{ATTR});
-ok(23, s{artist="R.E.M."}  {ATTR});
-ok(24, s{<disc(\s+ATTR){3}\s*>(\s*<NEST/>){13}\s*</disc>}{<DISC/>}s);
-ok(25, m{^\s*<(cddatabase)>\s*<DISC/>\s*</\1>\s*$});
+ok(s{<track number="1">Drive</track>}                         {<NEST/>}, 't1');
+ok(s{<track number="2">Try Not To Breathe</track>}            {<NEST/>}, 't2');
+ok(s{<track number="3">The Sidewinder Sleeps Tonite</track>}  {<NEST/>}, 't3');
+ok(s{<track number="4">Everybody Hurts</track>}               {<NEST/>}, 't4');
+ok(s{<track number="5">New Orleans Instrumental No. 1</track>}{<NEST/>}, 't5');
+ok(s{<track number="6">Sweetness Follows</track>}             {<NEST/>}, 't6');
+ok(s{<track number="7">Monty Got A Raw Deal</track>}          {<NEST/>}, 't7');
+ok(s{<track number="8">Ignoreland</track>}                    {<NEST/>}, 't8');
+ok(s{<track number="9">Star Me Kitten</track>}                {<NEST/>}, 't9');
+ok(s{<track number="10">Man On The Moon</track>}              {<NEST/>}, 't10');
+ok(s{<track number="11">Nightswimming</track>}                {<NEST/>}, 't11');
+ok(s{<track number="12">Find The River</track>}               {<NEST/>}, 't12');
+ok(s{<album>Automatic For The People</album>}                 {<NEST/>}, 'ttl');
+ok(s{cddbid="960b750c"}{ATTR}, 'cddbid');
+ok(s{id="9362-45055-2"}{ATTR}, 'id');
+ok(s{artist="R.E.M."}  {ATTR}, 'artist');
+ok(s{<disc(\s+ATTR){3}\s*>(\s*<NEST/>){13}\s*</disc>}{<DISC/>}s, 'disc');
+ok(m{^\s*<(cddatabase)>\s*<DISC/>\s*</\1>\s*$}, 'database');
 
 
 # Check that overriding build_tree() method works
@@ -326,12 +243,12 @@ $xml = q(<opt>
 
 my $xsp = new XML::Simple::UC();
 $ref1 = $xsp->XMLin($xml);
-ok(26, DataCompare($ref1, {
+is_deeply($ref1, {
   'SERVER' => {
     'NAME' => 'APOLLO',
     'ADDRESS' => '10 DOWNING STREET'
   }
-}));
+}, 'inheritance works with build_tree() overridden');
 
 
 # Check that overriding escape_value() method works
@@ -346,6 +263,6 @@ $xsp = new XML::Simple::CDE();
 
 $_ = $xsp->XMLout($ref);
 
-ok(27, m{<opt>\s*
+like($_, qr{<opt>\s*
  <server\s+address="<!\[CDATA\[12->14\s+"Puf&Stuf"\s+Drive\]\]>"\s*/>\s*
-</opt>}xs);
+</opt>}xs, 'inheritance works with escape_value() overridden');

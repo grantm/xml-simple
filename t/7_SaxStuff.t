@@ -1,7 +1,8 @@
 # $Id$
+# vim: syntax=perl
 
 use strict;
-
+use Test::More;
 use File::Spec;
 use IO::File;
 
@@ -10,9 +11,7 @@ BEGIN {
 
   eval { require XML::SAX; };
   if($@) {
-    print STDERR "no XML::SAX...";
-    print "1..0\n";
-    exit 0;
+    plan skip_all => 'no XML::SAX';
   }
 }
 
@@ -25,91 +24,16 @@ my $XMLFile   = File::Spec->catfile('t', 'desertnet.xml');
 my $CacheFile = File::Spec->catfile('t', 'desertnet.stor');
 
 unless(-e $SrcFile) {
-  print STDERR "test data missing...";
-  print "1..0\n";
-  exit 0;
+  plan skip_all => 'test data missing';
 }
 
-print "1..13\n";
 
-my $t = 1;
+plan tests => 13;
+
 
 ##############################################################################
 #                   S U P P O R T   R O U T I N E S
 ##############################################################################
-
-##############################################################################
-# Print out 'n ok' or 'n not ok' as expected by test harness.
-# First arg is test number (n).  If only one following arg, it is interpreted
-# as true/false value.  If two args, equality = true.
-#
-
-sub ok {
-  my($n, $x, $y) = @_;
-  die "Sequence error got $n expected $t" if($n != $t);
-  $x = 0 if(@_ > 2  and  $x ne $y);
-  print(($x ? '' : 'not '), 'ok ', $t++, "\n");
-}
-
-
-##############################################################################
-# Take two scalar values (may be references) and compare them (recursively
-# if necessary) returning 1 if same, 0 if different.
-#
-
-sub DataCompare {
-  my($x, $y) = @_;
-
-  my($i);
-
-  if(!ref($x)) {
-    return(1) if($x eq $y);
-    print STDERR "$t:DataCompare: $x != $y\n";
-    return(0);
-  }
-
-  if(ref($x) eq 'ARRAY') {
-    unless(ref($y) eq 'ARRAY') {
-      print STDERR "$t:DataCompare: expected arrayref, got: $y\n";
-      return(0);
-    }
-    if(scalar(@$x) != scalar(@$y)) {
-      print STDERR "$t:DataCompare: expected ", scalar(@$x),
-                   " element(s), got: ", scalar(@$y), "\n";
-      return(0);
-    }
-    for($i = 0; $i < scalar(@$x); $i++) {
-      DataCompare($x->[$i], $y->[$i]) || return(0);
-    }
-    return(1);
-  }
-
-  if(ref($x) eq 'HASH') {
-    unless(ref($y) eq 'HASH') {
-      print STDERR "$t:DataCompare: expected hashref, got: $y\n";
-      return(0);
-    }
-    if(scalar(keys(%$x)) != scalar(keys(%$y))) {
-      print STDERR "$t:DataCompare: expected ", scalar(keys(%$x)),
-                   " key(s) (", join(', ', keys(%$x)),
-		   "), got: ",  scalar(keys(%$y)), " (", join(', ', keys(%$y)),
-		   ")\n";
-      return(0);
-    }
-    foreach $i (keys(%$x)) {
-      unless(exists($y->{$i})) {
-	print STDERR "$t:DataCompare: missing hash key - {$i}\n";
-	return(0);
-      }
-      DataCompare($x->{$i}, $y->{$i}) || return(0);
-    }
-    return(1);
-  }
-
-  print STDERR "Don't know how to compare: " . ref($x) . "\n";
-  return(0);
-}
-
 
 ##############################################################################
 # Copy a file
@@ -173,22 +97,22 @@ my $xml = '';
 
 $XML::Simple::PREFERRED_PARSER = '';
 
-ok(1, CopyFile($SrcFile, $XMLFile));  # Start with known source file
-unlink($CacheFile);                   # Ensure there are ...
-ok(2, ! -e $CacheFile);               # ... no cache files lying around
+ok(CopyFile($SrcFile, $XMLFile), 'created source XML file');
+unlink($CacheFile);
+ok(! -e $CacheFile, 'deleted old cache files');
 
 # Pass in a filename to check parse_uri()
 
 my $opt = XMLin($XMLFile);
-ok(3, DataCompare($opt, $Expected));  # Got what we expected
+is_deeply($opt, $Expected, 'parsed expected value from file');
 
 
 # Pass in an IO::File object to test parse_file()
 
 my $fh = IO::File->new("<$XMLFile");
-ok(4, ref($fh));
+isa_ok($fh, 'IO::File', '$fh');
 $opt = XMLin($fh);
-ok(5, DataCompare($opt, $Expected));  # Got what we expected
+is_deeply($opt, $Expected, 'parsed expected value from IO::File object');
 $fh->close();
 
 
@@ -200,7 +124,7 @@ if(open(XMLFILE, "<$XMLFile")) {
   close(XMLFILE);
 }
 $opt = XMLin($xml);
-ok(6, DataCompare($opt, $Expected));  # Got what we expected
+is_deeply($opt, $Expected, 'parsed expected value from string');
   
 
 # Pass in '-' for STDIN
@@ -209,7 +133,7 @@ open(OLDSTDIN, "<&STDIN");
 close(STDIN);
 open(STDIN, "<$XMLFile");
 $opt = XMLin('-');
-ok(7, DataCompare($opt, $Expected));  # Got what we expected
+is_deeply($opt, $Expected, "parsed expected value from STDIN ('-')");
 
 open(STDIN, "<&OLDSTDIN");
 close(OLDSTDIN);
@@ -221,7 +145,8 @@ my $simple = XML::Simple->new();
 my $parser = XML::SAX::ParserFactory->parser(Handler => $simple);
 
 $opt = $parser->parse_uri($XMLFile);
-ok(8, DataCompare($opt, $Expected));  # Got what we expected
+is_deeply($opt, $Expected,
+  'XML::Simple as a SAX handler returned expected value');
 
 
 # Try again but make sure options from the constructor are being used
@@ -253,7 +178,7 @@ my $Expected2 = {
 	      }
 };
 
-ok(9, DataCompare($opt, $Expected2));  # Got what we expected
+is_deeply($opt, $Expected2, 'options passed to handler contructor work');
 
 
 # Try using XML::Simple to drive a SAX pipeline
@@ -290,7 +215,7 @@ my $opt2 = XMLout($opt,
   keyattr    => { server => 'osname' },
   Handler    => $filter,
 );
-ok(10, DataCompare($opt2, $Expected3));  # Got what we expected
+is_deeply($opt2, $Expected3, 'driving a SAX pipeline with XML::Simple worked');
 
 
 # Confirm that 'handler' is a synonym for 'Handler'
@@ -301,7 +226,7 @@ $opt2 = XMLout($opt,
   keyattr    => { server => 'osname' },
   handler    => $filter,
 );
-ok(11, DataCompare($opt2, $Expected3));  # Got what we expected
+is_deeply($opt2, $Expected3, "'handler' is a synonym for 'Handler'");
 
 
 # Confirm that DataHandler routine gets called
@@ -317,7 +242,7 @@ $simple = XML::Simple->new(
 $parser = XML::SAX::ParserFactory->parser(Handler => $simple);
 my $result = $parser->parse_string($xml);
 
-ok(12, $result, 'one,two,three');
+is($result, 'one,two,three', "'DataHandler' option works");
 
 
 # Confirm that 'datahandler' is a synonym for 'DataHandler'
@@ -332,7 +257,7 @@ $simple = XML::Simple->new(
 $parser = XML::SAX::ParserFactory->parser(Handler => $simple);
 $result = $parser->parse_string($xml);
 
-ok(13, $result, 'three,two,one');
+is($result, 'three,two,one', "'datahandler' is a synonym for 'DataHandler'");
 
 
 # Clean up and go
