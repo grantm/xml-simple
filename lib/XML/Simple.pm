@@ -52,7 +52,7 @@ use vars qw($VERSION @ISA @EXPORT $PREFERRED_PARSER);
 
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
-$VERSION           = '2.00';
+$VERSION           = '2.01';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
@@ -668,7 +668,7 @@ sub handle_options  {
     }
   }
   else {
-    if($StrictMode) {
+    if($StrictMode  and  $dirn eq 'in') {
       croak "No value specified for 'forcearray' option in call to XML$dirn()";
     }
     $opt->{forcearray} = 0;
