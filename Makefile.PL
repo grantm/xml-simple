@@ -1,48 +1,62 @@
+# $Id$
+
 use ExtUtils::MakeMaker;
 
-BEGIN {
-  my $parser_count = 0;
-  print "Checking for required modules ...\n";
+my $parser_count = 0;
+my $fatal        = 0;
 
-  eval { require XML::SAX };
+print "Checking for required modules ...\n";
+
+eval { require XML::SAX };
+if($@) {
+  print "XML::SAX is not installed\n";
+}
+else {
+  print "XML::SAX is installed ... good\n";
+  $parser_count++;
+
+  eval { require XML::NamespaceSupport };
   if($@) {
-    print "XML::SAX is not installed\n";
+    print "XML::NamespaceSupport is not installed ... this is required only for generating XML with namespace declarations\n";
   }
   else {
-    print "XML::SAX is installed ... good\n";
-    $parser_count++;
-
-    eval { require XML::NamespaceSupport };
-    if($@) {
-      print "XML::NamespaceSupport is not installed ... this is required only for generating XML with namespace declarations\n";
+    if($XML::NamespaceSupport::VERSION < 1.04) {
+      print "You must upgrade XML::NamespaceSupport to version 1.04 or better\n";
+      $fatal++;
     }
     else {
       print "XML::NamespaceSupport is installed ... good\n";
     }
-
   }
 
-  eval { require XML::Parser };
-  if($@) {
-    print "XML::Parser is not installed\n";
-  }
-  else {
-    print "XML::Parser is installed ... good\n";
-    $parser_count++;
-  }
+}
 
-  eval { require Storable };
-  if($@) {
-    print "Storable is not installed ... caching functions will not be available\n";
-  }
-  else {
-    print "Storable is installed ... good\n";
-  }
+eval { require XML::Parser };
+if($@) {
+  print "XML::Parser is not installed\n";
+}
+else {
+  print "XML::Parser is installed ... good\n";
+  $parser_count++;
+}
+
+eval { require Storable };
+if($@) {
+  print "Storable is not installed ... caching functions will not be available\n";
+}
+else {
+  print "Storable is installed ... good\n";
+}
 
 
-  unless($parser_count) {
-    die "You must install either XML::SAX or XML::Parser before XML::Simple";
-  }
+unless($parser_count) {
+  print "You must install either XML::SAX or XML::Parser before XML::Simple\n";
+  $fatal++;
+}
+
+if($fatal) {
+  print "You must correct the above problems before XML::Simple can be installed\n";
+  exit(1);
 }
 
 WriteMakefile(
