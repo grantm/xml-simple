@@ -1,5 +1,12 @@
 Revision history for Perl module XML::Simple
 
+2.09  Sep 09 2003
+      - Makefile.PL makeover contributed by Joshua Keroes
+      - fixed hash ordering assumption in test script (reported by Michel
+        Rodriguez)
+      - POD updates
+      - updated link to Perl XML FAQ
+
 2.08  Jun 13 2003
       - fixed variable expansion not happening in attributes (patch from Paul
         Bussé)
