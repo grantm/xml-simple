@@ -2416,7 +2416,7 @@ XPath support.
 
 =head1 STATUS
 
-This version (2.00) is the current stable version.
+This version (2.01) is the current stable version.
 
 =head1 SEE ALSO
 

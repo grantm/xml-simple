@@ -21,8 +21,8 @@ plan tests => 66;
 $@ = '';
 eval "use XML::Simple;";
 is($@, '', 'Module compiled OK');
-unless($XML::Simple::VERSION eq '2.00') {
-  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.00)");
+unless($XML::Simple::VERSION eq '2.01') {
+  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.01)");
 }
 
 
