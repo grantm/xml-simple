@@ -55,7 +55,6 @@ my %CacheScheme    = (
                        memcopy  => [ \&MemCopySave,  \&MemCopyRestore  ]
 		     );
 
-my $DefaultValues  = 1;       # Used for locking only
 my @KnownOptIn     = qw(keyattr keeproot forcecontent contentkey noattr
                         searchpath forcearray cache suppressempty parseropts
 			nsexpand datahandler DataHandler);
@@ -72,22 +71,11 @@ my $bad_def_ns_jcn = '{' . $xmlns_ns . '}';     # LibXML::SAX workaround
 
 
 ##############################################################################
-# Globals for use by caching routines (access protected by locks)
+# Globals for use by caching routines
 #
 
 my %MemShareCache  = ();
 my %MemCopyCache   = ();
-
-
-##############################################################################
-# Dummy 'lock' routine for non-threaded versions of Perl
-#
-
-BEGIN {
-  if($] < 5.005) {
-    eval "sub lock {}";
-  }
-}
 
 
 ##############################################################################
@@ -170,7 +158,6 @@ sub XMLin {
     $filename = $self->find_xml_file($string, @{$self->{opt}->{searchpath}});
 
     if($self->{opt}->{cache}) {
-      lock(%CacheScheme);
       foreach $scheme (@{$self->{opt}->{cache}}) {
 	croak "Unsupported caching scheme: $scheme"
 	  unless($CacheScheme{$scheme});
@@ -374,7 +361,6 @@ sub StorableRestore {
 sub MemShareSave {
   my($data, $filename) = @_;
 
-  lock(%MemShareCache);
   $MemShareCache{$filename} = [time(), $data];
 }
 
@@ -388,7 +374,6 @@ sub MemShareSave {
 sub MemShareRestore {
   my($filename) = @_;
   
-  lock(%MemShareCache);
   return unless($MemShareCache{$filename});
   return unless($MemShareCache{$filename}->[0] > (stat($filename))[9]);
 
@@ -407,7 +392,6 @@ sub MemShareRestore {
 sub MemCopySave {
   my($data, $filename) = @_;
 
-  lock(%MemCopyCache);
   unless($INC{'Storable.pm'}) {
     require Storable;           # We didn't need it until now
   }
@@ -426,7 +410,6 @@ sub MemCopySave {
 sub MemCopyRestore {
   my($filename) = @_;
   
-  lock(%MemCopyCache);
   return unless($MemCopyCache{$filename});
   return unless($MemCopyCache{$filename}->[0] > (stat($filename))[9]);
 
@@ -558,8 +541,6 @@ sub handle_options  {
   my $self = shift;
   my $dirn = shift;
 
-
-  lock($DefaultValues);
 
   # Determine valid options based on context
 
