@@ -1,6 +1,6 @@
 Revision history for Perl module XML::Simple
 
-1.07b Jan ?? 2002 - limited distribution beta
+1.07b Feb 05 2002 - beta release for testing SAX support
 	- added SAX support including:
 	  + using SAX parsers
 	  + acting as a SAX handler 

@@ -3,6 +3,17 @@ DESCRIPTION
   XML::Simple - Easy API to read/write XML (esp config files)
 
 
+  ******* WARNING ******* WARNING ******* WARNING ******* WARNING *******
+
+   This release (1.07b) is a beta release to allow the new SAX code to
+   be tested on as many platforms as possible.  Please try it out if you
+   can and report success/failure to the author.
+
+   For production systems, please use the latest stable release (1.06)
+
+  ******* WARNING ******* WARNING ******* WARNING ******* WARNING *******
+
+
 PREREQUISITES
 
   XML::Simple requires a module capable of parsing XML - either XML::SAX or
@@ -33,9 +44,10 @@ BUILDING/INSTALLING
 
 STATUS
 
-  This version (1.07b) is a limited distribution beta release - the first
-  version to support SAX.  If you encounter any problems installing or
-  running this release, please contact the author.
+  This version (1.07b) is a beta release - to allow testing of the new
+  SAX code.  If you encounter any problems installing or running this
+  release, please email the author the complete output of 'make test'
+  (even if your problem does not occur at this point).
 
   The current stable release is version 1.06.  This version is
   believed to be thread-safe.
