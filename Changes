@@ -1,5 +1,18 @@
 Revision history for Perl module XML::Simple
 
+2.00  Dec 08 2002
+	- first production release with SAX support
+	- added support for 'strict mode' using :strict import tag
+	- removed locking code (as it was incompatible with iThreads)
+	- integrated patch for test failures from Sean Campbell
+	- fixed stringification of references during folding (reported
+	  by Trond Michelsen)
+        - fixed incompatability with Tie::IxHash (reported by
+          Venkataramana Mokkapati)
+	- POD: alphabetised options (patch from John Borwick)
+        - POD: updated suppressempty (patch from Kjetil Kjernsmo)
+	- added FAQ.pod to distribution and added new questions
+
 1.08_01 Feb 14 2002 - beta release for testing SAX support
 	- fixed errors with default namespace handling
 	- minor POD updates

@@ -3,27 +3,39 @@ DESCRIPTION
   XML::Simple - Easy API to read/write XML (esp config files)
 
 
-  ******* WARNING ******* WARNING ******* WARNING ******* WARNING *******
-
-   This release (1.08_01) is a beta release to allow the new SAX code to
-   be tested on as many platforms as possible.  Please try it out if you
-   can and report success/failure to the author.
-
-   For production systems, please use the latest stable release (1.08)
-
-  ******* WARNING ******* WARNING ******* WARNING ******* WARNING *******
-
-
 PREREQUISITES
 
   XML::Simple requires a module capable of parsing XML - either XML::SAX or
   XML::Parser must be installed (if you're running ActivePerl, you'll
   already have XML::Parser installed).
 
+  If you have installed XML::SAX, it will be used by default.  You should
+  consider installing XML::SAX::Expat or XML::LibXML to replace the (slower)
+  PurePerl parser from the XML::SAX distribution.
+
   To generate documents with namespaces, XML::NamespaceSupport is required.
 
   The optional caching features of XML::Simple also require Storable.pm.
 
+  Note: These prerequisites cannot be resolved automatically by CPAN.pm
+        since you must decide whether to use XML::Parser or XML::SAX.
+
+
+WARNING MESSAGES FROM XML::SAX
+
+  When you use XML::Simple, you may see this warning message:
+
+    could not find ParserDetails.ini in C:/Perl/site/lib/XML/SAX
+
+  This means your XML::SAX installation is broken (perhaps you installed
+  version 0.10 from the ActiveState PPM repository).  Since it's broken 
+  anyway, the simplest way to suppress these warnings is to remove
+  C:/Perl/site/lib/XML/SAX.pm.
+
+  The procedure for correctly installing the latest version of XML::SAX
+  is documented here:
+
+    http://perl-xml.sourceforge.net/faq/#win32_cpan
 
 BUILDING/INSTALLING
 
@@ -44,41 +56,24 @@ BUILDING/INSTALLING
 
 STATUS
 
-  This version (1.08_01) is a beta release - to allow testing of the new
-  SAX code.  If you encounter any problems installing or running this
-  release, please email the author the complete output of 'make test'
-  (even if your problem does not occur at this point).
-
-  The current stable release is version 1.08.  This version is
-  believed to be thread-safe.
+  This version (2.00) is the current stable release.
 
   Please send any feedback to the author: grantm@cpan.org
 
 
 NEW IN THIS RELEASE
 
-  - fixed errors with default namespace handling
-  - minor POD updates
-
-  The following additional changes have been made since the last
-  stable release:
-
-  - added SAX support including:
-    + using SAX parsers
-    + acting as a SAX handler 
-    + generating SAX events from XMLout() with new Handler option
-    + acting as a SAX filter (via new DataHandler option)
-  - added $ENV{XML_SIMPLE_PREFERRED_PARSER} and
-    $XML::Simple::PREFERRED_PARSER for selecting a parser module
-  - added namespace support (SAX only) with nsexpand option for both 
-    XMLin() and XMLout()
-  - searchpath now defaults to current directory
-  - parseropts option now officially deprecated
-  - removed obselete 'convert' script from distribution
-  - many POD updates (more to come)
-
+  - First production release with SAX support
+  - Added support for 'strict mode' to catch common mistakes
+  - Removed locking code (as it was incompatible with iThreads)
+  - POD updates
+  - Added (updated) FAQ document to distribution
 
   See 'Changes' for a detailed history.
+
+  See 'perldoc XML::Simple' for full documentation.
+
+  See 'perldoc XML::Simple::FAQ' for frequently asked questions.
 
 
 COPYRIGHT
