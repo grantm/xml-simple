@@ -1,5 +1,9 @@
 Revision history for Perl module XML::Simple
 
+2.02  Dec 15 2002
+	- changed Storable calls to use locking (reported by Randal 
+          Schwarz)
+
 2.01  Dec 11 2002
 	- fixed bug whereby :strict mode required forcearray on 
           XMLout() (reported by Ville Skytta)
