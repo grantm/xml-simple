@@ -237,7 +237,7 @@ $xml = q(<opt xmlns="http://www.orgsoc.org/">
 );
 
 $expected = {
-  '{http://www.w3.org/2000/xmlns/}' => 'http://www.orgsoc.org/',
+  'xmlns' => 'http://www.orgsoc.org/',
   '{http://www.orgsoc.org/}list' => {
     '{http://www.orgsoc.org/}member' => [ 'Tom', 'Dick', 'Larry' ]
   }
@@ -267,7 +267,7 @@ ok(6, $xml =~ m{
 # Check that the autogeneration of namespaces works as we expect
 
 $opt = {
-  '{http://www.w3.org/2000/xmlns/}' => 'http://www.orgsoc.org/',
+  'xmlns' => 'http://www.orgsoc.org/',
   '{http://www.orgsoc.org/}list' => {
     '{http://www.orgsoc.org/}member' => [ 'Tom', 'Dick', 'Larry' ],
     '{http://www.phantom.com/}director' => [ 'Bill', 'Ben' ],
