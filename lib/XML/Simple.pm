@@ -53,7 +53,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $PREFERRED_PARSER);
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
 @EXPORT_OK         = qw(xml_in xml_out);
-$VERSION           = '2.06';
+$VERSION           = '2.07';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
@@ -110,8 +110,7 @@ sub import {
 #
 
 sub new {
-  my $class = ref($_[0]) || $_[0];      # Works as object or class method
-  shift;
+  my $class = shift;
 
   if(@_ % 2) {
     croak "Default options must be name=>value pairs (odd number supplied)";
@@ -357,6 +356,8 @@ sub StorableSave {
   $cachefile =~ s{(\.xml)?$}{.stor};
 
   require Storable;           # We didn't need it until now
+
+  # If the following line fails for you, your Storable.pm is old - upgrade
   
   Storable::lock_nstore($data, $cachefile);
   
@@ -871,7 +872,9 @@ sub collapse {
     $attr = {};
   }
   elsif($self->{opt}->{normalisespace} == 2) {
-    $_ = $self->normalise_space($_) foreach (values %$attr);
+    while(my($key, $value) = each %$attr) {
+      $attr->{$key} = $self->normalise_space($value)
+    }
   }
 
 
@@ -929,7 +932,7 @@ sub collapse {
         $attr->{$key} = [ $attr->{$key}, $val ];
       }
     }
-    elsif(UNIVERSAL::isa($val, 'ARRAY')) {  # Handle anonymous arrays
+    elsif(defined($val)  and  UNIVERSAL::isa($val, 'ARRAY')) {
       $attr->{$key} = [ $val ];
     }
     else {
@@ -960,7 +963,7 @@ sub collapse {
   my $count = 0;
   if($self->{opt}->{keyattr}) {
     while(($key,$val) = each %$attr) {
-      if(UNIVERSAL::isa($val, 'ARRAY')) {
+      if(defined($val)  and  UNIVERSAL::isa($val, 'ARRAY')) {
         $attr->{$key} = $self->array_to_hash($key, $val);
       }
       $count++;
@@ -986,7 +989,10 @@ sub collapse {
 
   # Fold hashes containing a single anonymous array up into just the array
 
-  if($count == 1  and  UNIVERSAL::isa($attr->{anon}, 'ARRAY')) {
+  if($count == 1 
+     and  exists $attr->{anon}  
+     and  UNIVERSAL::isa($attr->{anon}, 'ARRAY')
+  ) {
     return($attr->{anon});
   }
 
@@ -1963,7 +1969,7 @@ This alternative (and preferred) form of the 'ForceArray' option allows you to
 specify a list of element names which should always be forced into an array
 representation, rather than the 'all or nothing' approach above.
 
-It is also possible (since version 2.06) to include compiled regular
+It is also possible (since version 2.05) to include compiled regular
 expressions in the list - any element names which match the pattern will be
 forced to arrays.  If the list contains only a single regex, then it is not
 necessary to enclose it in an arrayref.  Eg:
@@ -2793,7 +2799,7 @@ XPath support.
 
 =head1 STATUS
 
-This version (2.06) is the current stable version.
+This version (2.07) is the current stable version.
 
 =head1 SEE ALSO
 
