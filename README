@@ -62,6 +62,10 @@ STATUS
 
 
 NEW IN THIS RELEASE
+  - fixed bug which broke compatibility with Perl 5.005_03
+  - fixed test problems with Storable
+  
+  New in Version 2.06
   - bug fix for strict mode requiring ForceArray on output
 
   New in Version 2.05

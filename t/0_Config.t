@@ -7,7 +7,7 @@ use Test::More tests => 1;
 
 # Build up a list of installed modules
 
-my @mod_list = qw(XML::Simple XML::Parser XML::SAX);
+my @mod_list = qw(XML::Simple Storable XML::Parser XML::SAX);
 
 
 # If XML::SAX is installed, add a list of installed SAX parsers
