@@ -5,8 +5,11 @@ DESCRIPTION
 
 PREREQUISITES
 
-  XML::Simple requires XML::Parser (if you're running ActivePerl, you'll
-  already have this installed).
+  XML::Simple requires a module capable of parsing XML - either XML::SAX or
+  XML::Parser must be installed (if you're running ActivePerl, you'll
+  already have XML::Parser installed).
+
+  To generate documents with namespaces, XML::NamespaceSupport is required.
 
   The optional caching features of XML::Simple also require Storable.pm.
 
@@ -30,7 +33,11 @@ BUILDING/INSTALLING
 
 STATUS
 
-  This version (1.06) is the current stable release.  This version is
+  This version (1.07b) is a limited distribution beta release - the first
+  version to support SAX.  If you encounter any problems installing or
+  running this release, please contact the author.
+
+  The current stable release is version 1.06.  This version is
   believed to be thread-safe.
 
   Please send any feedback to the author: grantm@cpan.org
@@ -38,15 +45,27 @@ STATUS
 
 NEW IN THIS RELEASE
 
-  - minor change to fix version number in default xmldecl (from '1' to '1.0')
-  - updated contact email address for author
+  - added SAX support including:
+    + using SAX parsers
+    + acting as a SAX handler 
+    + generating SAX events from XMLout() with new Handler option
+    + acting as a SAX filter (via new DataHandler option)
+  - added $ENV{XML_SIMPLE_PREFERRED_PARSER} and
+    $XML::Simple::PREFERRED_PARSER for selecting a parser module
+  - added namespace support (SAX only) with nsexpand option for both 
+    XMLin() and XMLout()
+  - searchpath now defaults to current directory
+  - parseropts option now officially deprecated
+  - removed obselete 'convert' script from distribution
+  - many POD updates (more to come)
+
 
   See 'Changes' for a detailed history.
 
 
 COPYRIGHT
 
-  Copyright 1999-2001 Grant McLean <grantm@cpan.org>
+  Copyright 1999-2002 Grant McLean <grantm@cpan.org>
 
   This library is free software; you can redistribute it
   and/or modify it under the same terms as Perl itself.
