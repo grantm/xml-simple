@@ -1,5 +1,8 @@
 Revision history for Perl module XML::Simple
 
+2.11  Mar 31 2004
+      - Fixed hash ordering assumption in a new test (reported by Jost Krieger)
+
 2.10  Feb 29 2004
       - Added AttrIndent option (patch from Volker Moell)
       - Hash keys are now sorted alphabetically by default; enable the

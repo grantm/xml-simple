@@ -13,12 +13,12 @@ PREREQUISITES
   consider installing XML::SAX::Expat or XML::LibXML to replace the (slower)
   PurePerl parser from the XML::SAX distribution.
 
+  If you install using the CPAN.pm shell and you do not have either XML::Parser
+  or XML::SAX installed, then XML::SAX will be installed by default.
+
   To generate documents with namespaces, XML::NamespaceSupport is required.
 
   The optional caching features of XML::Simple also require Storable.pm.
-
-  Note: These prerequisites cannot be resolved automatically by CPAN.pm
-        since you must decide whether to use XML::Parser or XML::SAX.
 
 
 WARNING MESSAGES FROM XML::SAX
@@ -56,12 +56,15 @@ BUILDING/INSTALLING
 
 STATUS
 
-  This version (2.10) is the current stable release.
+  This version (2.11) is the current stable release.
 
   Please send any feedback to the author: grantm@cpan.org
 
 
 NEW IN THIS RELEASE
+  - Fix for a broken test
+
+  New in Version 2.10
   - Added AttrIndent option (patch from Volker Moell)
   - Hash keys are now sorted alphabetically by default; enable the new
     NoSort option if you don't want this (patch from Volker Moell)
