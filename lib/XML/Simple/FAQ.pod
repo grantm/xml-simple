@@ -148,7 +148,8 @@ On Unix systems, try:
   perl -MCPAN -e 'install XML::Simple'
 
 If that doesn't work, download the latest distribution from
-http://web.co.nz/~grantm/cpan/ , unpack it and run these commands:
+ftp://ftp.cpan.org/pub/CPAN/authors/id/G/GR/GRANTM , unpack it and run these
+commands:
 
   perl Makefile.PL
   make
@@ -160,9 +161,9 @@ this command:
 
   ppm install XML::Simple
 
-If that doesn't work, you really only need the Simple.pm file, so grab it
-from the above site and save it in the \site\lib\XML directory under your
-Perl installation (typically C:\Perl).
+If that doesn't work, you really only need the Simple.pm file, so extract it
+from the .tar.gz file (eg: using WinZIP) and save it in the \site\lib\XML 
+directory under your Perl installation (typically C:\Perl).
 
 
 =head2 I'm trying to install XML::Simple and 'make test' fails
