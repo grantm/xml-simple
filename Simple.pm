@@ -1,3 +1,5 @@
+# $Id$
+
 package XML::Simple;
 
 =head1 NAME
@@ -22,6 +24,8 @@ Or the object oriented way:
 
     my $xml = $xs->XMLout($hashref [, <options>]);
 
+(or see L<"SAX SUPPORT"> for 'the SAX way').
+
 =cut
 
 # See after __END__ for more POD documentation
@@ -38,11 +42,12 @@ require Exporter;
 # Define some constants
 #
 
-use vars qw($VERSION @ISA @EXPORT);
+use vars qw($VERSION @ISA @EXPORT $PREFERRED_PARSER);
 
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
-$VERSION           = '1.06';
+$VERSION           = '1.07b';
+$PREFERRED_PARSER  = undef;
 
 my %CacheScheme    = (
                        storable => [ \&StorableSave, \&StorableRestore ],
@@ -52,13 +57,17 @@ my %CacheScheme    = (
 
 my $DefaultValues  = 1;       # Used for locking only
 my @KnownOptIn     = qw(keyattr keeproot forcecontent contentkey noattr
-                        searchpath forcearray cache suppressempty parseropts);
+                        searchpath forcearray cache suppressempty parseropts
+			nsexpand datahandler DataHandler);
 my @KnownOptOut    = qw(keyattr keeproot contentkey noattr
-                        rootname xmldecl outputfile noescape suppressempty);
+                        rootname xmldecl outputfile noescape suppressempty
+			nsexpand handler Handler);
 my @DefKeyAttr     = qw(name key id);
 my $DefRootName    = qq(opt);
 my $DefContentKey  = qq(content);
 my $DefXmlDecl     = qq(<?xml version='1.0' standalone='yes'?>);
+
+my $xmlns_ns       = 'http://www.w3.org/2000/xmlns/';
 
 
 ##############################################################################
@@ -174,7 +183,9 @@ sub XMLin {
     delete($self->{opt}->{cache});
     if($string eq '-') {
       # Read from standard input
-      $filename = '-';
+
+      local($/) = undef;
+      $string = <STDIN>;
     }
   }
 
@@ -205,12 +216,18 @@ sub XMLin {
 ##############################################################################
 # Method: build_tree()
 #
-# If parsing is required, this is the routine that does it - using the 'Tree'
-# style of XML::Parser.
+# This routine will be called if there is no suitable pre-parsed tree in a
+# cache.  It parses the XML and returns an XML::Parser 'Tree' style data
+# structure (summarised in the comments for the collapse() routine below).
 #
-# If you're planning to override this routine, your version should return the
-# same type of data structure as an XML::Parser Tree (summarised in the 
-# comments for the collapse() routine below).
+# XML::Simple requires the services of another module that knows how to
+# parse XML.  If XML::SAX is installed, the default SAX parser will be used,
+# otherwise XML::Parser will be used.
+#
+# This routine expects to be passed a 'string' as argument 1 or a filename as
+# argument 2.  The 'string' might be a string of XML or it might be a 
+# reference to an IO::Handle.  (This non-intuitive mess results in part from
+# the way XML::Parser works but that's really no excuse).
 #
 
 sub build_tree {
@@ -219,22 +236,68 @@ sub build_tree {
   my $string   = shift;
 
 
-  {
+  my $preferred_parser = $PREFERRED_PARSER;
+  unless(defined($preferred_parser)) {
+    $preferred_parser = $ENV{XML_SIMPLE_PREFERRED_PARSER} || '';
+  }
+  if($preferred_parser eq 'XML::Parser') {
+    return($self->build_tree_xml_parser($filename, $string));
+  }
+
+  eval { require XML::SAX; };      # We didn't need it until now
+  if($@) {                         # No XML::SAX - fall back to XML::Parser
+    if($preferred_parser) {        # unless a SAX parser was expressly requested
+      croak "XMLin() could not load XML::SAX";
+    }
+    return($self->build_tree_xml_parser($filename, $string));
+  }
+
+  $XML::SAX::ParserPackage = $preferred_parser if($preferred_parser);
+
+  my $sp = XML::SAX::ParserFactory->parser(Handler => $self);
+  
+  $self->{nocollapse} = 1;
+  my($tree);
+  if($filename) {
+    $tree = $sp->parse_uri($filename);
+  }
+  else {
+    if(ref($string)) {
+      $tree = $sp->parse_file($string);
+    }
+    else {
+      $tree = $sp->parse_string($string);
+    }
+  }
+
+  return($tree);
+}
+
+
+##############################################################################
+# Method: build_tree_xml_parser()
+#
+# This routine will be called if XML::SAX is not installed, or if XML::Parser
+# was specifically requested.  It takes the same arguments as build_tree() and
+# returns the same data structure (XML::Parser 'Tree' style).
+#
+
+sub build_tree_xml_parser {
+  my $self     = shift;
+  my $filename = shift;
+  my $string   = shift;
+
+
+  eval {
     local($^W) = 0;      # Suppress warning from Expat.pm re File::Spec::load()
     require XML::Parser; # We didn't need it until now
+  };
+  if($@) {
+    croak "XMLin() requires either XML::SAX or XML::Parser";
   }
 
   my $xp = new XML::Parser(Style => 'Tree', @{$self->{opt}->{parseropts}});
   my($tree);
-
-
-  # Work around wierd read error problem in expat with '-'
-
-  if($filename  and  $filename eq '-') {
-    local($/) = undef;
-    $string = <STDIN>;
-    $filename = undef;
-  }
   if($filename) {
     # $tree = $xp->parsefile($filename);  # Changed due to prob w/mod_perl
     local(*XML_FILE);
@@ -394,6 +457,14 @@ sub XMLout {
   $self->handle_options('out', @_);
 
 
+  # If namespace expansion is set, XML::NamespaceSupport is required
+
+  if($self->{opt}->{nsexpand}) {
+    require XML::NamespaceSupport;
+    $self->{nsup} = XML::NamespaceSupport->new();
+  }
+
+
   # Wrap top level arrayref in a hash
 
   if(ref($ref) eq 'ARRAY') {
@@ -441,11 +512,19 @@ sub XMLout {
       return($self->{opt}->{outputfile}->print($xml));
     }
     else {
-      open(_XML_SIMPLE_OUT_, ">$self->{opt}->{outputfile}") ||
+      local(*OUT);
+      open(OUT, ">$self->{opt}->{outputfile}") ||
         croak "open($self->{opt}->{outputfile}): $!";
-      print _XML_SIMPLE_OUT_ $xml || croak "print: $!";
-      close(_XML_SIMPLE_OUT_);
+      print OUT $xml || croak "print: $!";
+      close(OUT);
     }
+  }
+  elsif($self->{opt}->{handler}) {
+    require XML::SAX;
+    my $sp = XML::SAX::ParserFactory->parser(
+               Handler => $self->{opt}->{handler}
+	     );
+    return($sp->parse_string($xml));
   }
   else {
     return($xml);
@@ -615,6 +694,22 @@ sub handle_options  {
     $opt->{forcearray} = 0;
   }
 
+
+  # XMLout() accepts 'Handler' as a synonym for 'handler'
+
+  if($opt->{Handler}) {
+    $opt->{handler} = $opt->{Handler};
+    delete($opt->{Handler});
+  }
+
+
+  # and 'DataHandler' as a synonym for 'datahandler'
+
+  if($opt->{DataHandler}) {
+    $opt->{datahandler} = $opt->{DataHandler};
+    delete($opt->{DataHandler});
+  }
+
 }
 
 
@@ -645,6 +740,15 @@ sub find_xml_file  {
       my $fullpath = File::Spec->catfile($path, $file);
       return($fullpath) if(-e $fullpath);
     }
+  }
+
+  # If user did not supply a search path, default to current directory
+
+  if(!@search_path) {
+    if(-e $file) {
+      return($file);
+    }
+    croak "File does not exist: $file";
   }
 
   croak "Could not find $file in ", join(':', @search_path);
@@ -864,6 +968,20 @@ sub value_to_xml {
 
   my $nl = "\n";
 
+
+  # Translate Clarkian names back to prefix:name form
+
+  if($self->{nsup}) {
+    my($uri, $lname) = $self->{nsup}->parse_jclark_notation($name);
+    if($uri) {
+      my $prefix = $self->{nsup}->get_prefix($uri);
+      $name = "$prefix:$lname";
+    }
+  }
+
+
+  # Convert to XML
+  
   if(ref($ref)) {
     croak "recursive data structures not supported" if($encoded->{$ref});
     $encoded->{$ref} = $ref;
@@ -880,6 +998,7 @@ sub value_to_xml {
       return("$ref$nl");
     }
   }
+
 
   # Unfold hash to array if possible
 
@@ -899,10 +1018,45 @@ sub value_to_xml {
   # Handle hashrefs
 
   if(ref($ref) eq 'HASH') {
+
+    # Scan for namespace declaration attributes
+
+    my $nsdecls = '';
+    if($self->{nsup}) {
+      $ref = { %$ref };                # Make a copy before we mess with it
+      $self->{nsup}->push_context();
+
+      foreach my $qname (keys(%$ref)) {
+	my($uri, $lname) = $self->{nsup}->parse_jclark_notation($qname);
+	if($uri) {
+	  if($uri eq $xmlns_ns) {
+	    $self->{nsup}->declare_prefix($lname, $ref->{$qname});
+	    $nsdecls .= qq( xmlns:$lname="$ref->{$qname}"); 
+	    delete($ref->{$qname});
+	  }
+	}
+      }
+
+      # Translate any remaining Clarkian names
+
+      foreach my $qname (keys(%$ref)) {
+	my($uri, $lname) = $self->{nsup}->parse_jclark_notation($qname);
+	if($uri) {
+	  my $prefix = $self->{nsup}->get_prefix($uri);
+	  unless($prefix) {
+	    $prefix = $self->{nsup}->declare_prefix(undef, $uri);
+	  }
+	  $ref->{"$prefix:$lname"} = $ref->{$qname};
+	  delete($ref->{$qname});
+        }
+      }
+    }
+
+
     my @nested = ();
     my $text_content = undef;
     if($named) {
-      push @result, $indent, '<', $name;
+      push @result, $indent, '<', $name, $nsdecls;
     }
 
     if(%$ref) {
@@ -957,6 +1111,7 @@ sub value_to_xml {
     else {
       push @result, " />", $nl;
     }
+    $self->{nsup}->pop_context() if($self->{nsup});
   }
 
 
@@ -1046,6 +1201,104 @@ sub hash_to_array {
   return($arrayref);
 }
 
+
+##############################################################################
+# Methods required for building trees from SAX events
+##############################################################################
+
+sub start_document {
+  my $self = shift;
+
+  $self->handle_options('in') unless($self->{opt});
+
+  $self->{lists} = [];
+  $self->{curlist} = $self->{tree} = [];
+}
+
+
+sub start_element {
+  my $self    = shift;
+  my $element = shift;
+
+  my $name = $element->{Name};
+  if($self->{opt}->{nsexpand}) {
+    $name = $element->{LocalName} || '';
+    if(defined($element->{NamespaceURI})) {
+      $name = "{$element->{NamespaceURI}}$name";
+    }
+  }
+  my $attributes = {};
+  while(my($jcname, $attr) = each(%{$element->{Attributes}})) {
+    if($self->{opt}->{nsexpand}) {
+      $attributes->{$jcname} = $attr->{Value};
+    }
+    else {
+      $attributes->{$attr->{Name}} = $attr->{Value};
+    }
+  }
+  my $newlist = [ $attributes ];
+  push @{ $self->{lists} }, $self->{curlist};
+  push @{ $self->{curlist} }, $name => $newlist;
+  $self->{curlist} = $newlist;
+}
+
+
+sub characters {
+  my $self  = shift;
+  my $chars = shift;
+
+  my $text  = $chars->{Data};
+  my $clist = $self->{curlist};
+  my $pos = $#$clist;
+  
+  if ($pos > 0 and $clist->[$pos - 1] eq '0') {
+    $clist->[$pos] .= $text;
+  }
+  else {
+    push @$clist, 0 => $text;
+  }
+}
+
+
+sub end_element {
+  my $self    = shift;
+
+  $self->{curlist} = pop @{ $self->{lists} };
+}
+
+
+sub end_document {
+  my $self = shift;
+
+  delete($self->{curlist});
+  delete($self->{lists});
+
+  my $tree = $self->{tree};
+  delete($self->{tree});
+
+
+  # Return tree as-is to XMLin()
+
+  return($tree) if($self->{nocollapse});
+
+
+  # Or collapse it before returning it to SAX parser class
+  
+  if($self->{opt}->{keeproot}) {
+    $tree = $self->collapse({}, @$tree);
+  }
+  else {
+    $tree = $self->collapse(@{$tree->[1]});
+  }
+
+  if($self->{opt}->{datahandler}) {
+    return($self->{opt}->{datahandler}->($self, $tree));
+  }
+
+  return($tree);
+}
+
+
 1;
 
 __END__
@@ -1134,12 +1387,14 @@ case, you might want to read L<"WHERE TO FROM HERE?">.
 
 =head1 DESCRIPTION
 
-The XML::Simple module provides a simple API layer on top of the XML::Parser
-module.  Two functions are exported: C<XMLin()> and C<XMLout()>.
+The XML::Simple module provides a simple API layer on top of an underlying XML 
+parsing module (either XML::Parser or one of the SAX2 parser modules).
+Two functions are exported: C<XMLin()> and C<XMLout()>.
 
-The most common approach is to simply call these two functions directly, but an
+The simplest approach is to call these two functions directly, but an
 optional object oriented interface (see L<"OPTIONAL OO INTERFACE"> below)
-allows them to be called as methods of an B<XML::Simple> object.
+allows them to be called as methods of an B<XML::Simple> object.  The object
+interface can also be used at either end of a SAX pipeline.
 
 =head2 XMLin()
 
@@ -1192,6 +1447,9 @@ Takes a data structure (generally a hashref) and returns an XML encoding of
 that structure.  If the resulting XML is parsed using C<XMLin()>, it will
 return a data structure equivalent to the original. 
 
+The C<XMLout()> function can also be used to output the XML as SAX events
+see the 'handler' option and L<"SAX SUPPORT"> for more details).
+
 When translating hashes to XML, hash keys which have a leading '-' will be
 silently skipped.  This is the approved method for marking elements of a
 data structure which should be ignored by C<XMLout>.  (Note: If these items
@@ -1208,8 +1466,8 @@ which conform to the relatively strict XML naming rules:
 Names in XML must begin with a letter.  The remaining characters may be
 letters, digits, hyphens (-), underscores (_) or full stops (.).  It is also
 allowable to include one colon (:) in an element name but this should only be
-used when working with namespaces - a facility well beyond the scope of
-B<XML::Simple>.
+used when working with namespaces (B<XML::Simple> can only usefully work with
+namespaces when teamed with a SAX Parser).
 
 You can use other punctuation characters in hash values (just not in hash
 keys) however B<XML::Simple> does not support dumping binary data.
@@ -1572,12 +1830,63 @@ By default, C<XMLout()> will translate the characters 'E<lt>', 'E<gt>', '&' and
 suppress escaping (presumably because you've already escaped the data in some
 more sophisticated manner).
 
+=item nsexpand => 1 (B<in+out>)
+
+This option controls namespace expansion - the translation of element and
+attribute names of the form 'prefix:name' to '{uri}name'.  For example the
+element name 'xsl:template' might be expanded to:
+'{http://www.w3.org/1999/XSL/Transform}template'.
+
+By default, C<XMLin()> will return element names and attribute names exactly as
+they appear in the XML.  Setting this option to 1 will cause all element and
+attribute names to be expanded to include their namespace prefix.
+
+I<Note: You must be using a SAX parser for this option to work (ie: it does not
+work with XML::Parser)>.
+
+This option also controls whether C<XMLout()> performs the reverse translation
+from '{uri}name' back to 'prefix:name'.  The default is no translation.  If
+your data contains expanded names, you should set this option to 1 otherwise
+C<XMLout> will emit XML which is not well formed.
+
+I<Note: You must have the XML::NamespaceSupport module installed if you want
+C<XMLout()> to translate URIs back to prefixes>.
+
+=item handler => object_ref (B<out>)
+
+Use the 'handler' option to have C<XMLout()> generate SAX events rather than 
+returning a string of XML.  For more details see L<"SAX SUPPORT"> below.
+You can specify 'Handler' as a synonym for 'handler' for compatability with
+the SAX specification.
+
+Note: the current implementation of this option generates a string of XML
+and uses a SAX parser to translate it into SAX events.  The normal encoding
+rules apply here - your data must be UTF8 encoded unless you specify an 
+alternative encoding via the 'xmldecl' option; and by the time the data reaches
+the handler object, it will be in UTF8 form regardless of the encoding you
+supply.  A future implementation of this option may generate the events 
+directly.
+
+=item datahandler => code_ref (B<in>)
+
+When you use an B<XML::Simple> object as a SAX handler, it will return a
+'simple tree' data structure in the same format as C<XMLin()> would return.  If
+this option is set (to a subroutine reference), then when the tree is built the
+subroutine will be called and passed two arguments: a reference to the
+B<XML::Simple> object and a reference to the data tree.  The return value from
+the subroutine will be returned to the SAX driver.  (See L<"SAX SUPPORT"> for
+more details).
+
+You can specify 'DataHandler' as a synonym for 'datahandler'.
+
 =item parseropts => [ XML::Parser Options ] (B<in>)
 
-Use this option to specify parameters that should be passed to the constructor
-of the underlying XML::Parser object.  For example to turn on the namespace processing mode, you could say:
+I<Note: This option is now officially deprecated.  If you find it useful,
+email the author with an example of what you use it for>.
 
-  XMLin($xml, parseropts => [ Namespaces => 1 ])
+Use this option to specify parameters that should be passed to the constructor
+of the underlying XML::Parser object.
+
 
 =back
 
@@ -1622,12 +1931,160 @@ you wished to provide an alternative routine for escaping character data (the
 escape_value method) or for building the initial parse tree (the build_tree
 method).
 
+=head1 SAX SUPPORT
+
+From version 1.07, B<XML::Simple> includes support for SAX (the Simple API for
+XML) - specifically SAX2. 
+
+In a typical SAX application, an XML Parser (or SAX 'driver') module generates
+SAX events (start of element, character data, end of element, etc) as it parses
+an XML document and a 'handler' module processes the events to extract the
+required data.  This simple model allows for some interesting and powerful
+possibilities:
+
+=over 4
+
+=item *
+
+Applications written to the SAX API can extract data from huge XML documents
+without the memory overheads of a DOM or tree API.
+
+=item *
+
+The SAX API allows for plug and play interchange of parser modules without
+having to change your code to fit a new module's API.  A number of SAX parsers
+are available with capabilities ranging from extreme portability to blazing
+performance.
+
+=item *
+
+A SAX 'filter' module can implement both a handler interface for receiving
+data and a generator interface for passing modified data on to a downstream
+handler.  Filters can be chained together in 'pipelines'.
+
+=item *
+
+One filter module might split a data stream to direct data to two or more
+downstream handlers.
+
+=item *
+
+Generating SAX events is not the exclusive preserve of XML parsing modules.
+For example, a module might extract data from a relational database using DBI
+and pass it on to a SAX pipeline for filtering and formatting.
+
+=back
+
+B<XML::Simple> can operate at either end of a SAX pipeline.  For example,
+you can take a data structure in the form of a hashref and pass it into a
+SAX pipeline using the 'Handler' option on C<XMLout()>:
+
+  use XML::Simple;
+  use Some::SAX::Filter;
+  use XML::SAX::Writer;
+
+  my $ref = {
+               ....   # your data here
+            };
+
+  my $writer = XML::SAX::Writer->new();
+  my $filter = Some::SAX::Filter->new(Handler => $writer);
+  my $simple = XML::Simple->new(Handler => $filter);
+  $simple->XMLout($ref);
+
+You can also put B<XML::Simple> at the opposite end of the pipeline to take
+advantage of the simple 'tree' data structure once the relevant data has been
+isolated through filtering:
+
+  use XML::SAX;
+  use Some::SAX::Filter;
+  use XML::Simple;
+
+  my $simple = XML::Simple->new(forcearray => 1, keyattr => ['partnum']);
+  my $filter = Some::SAX::Filter->new(Handler => $simple);
+  my $parser = XML::SAX::ParserFactory->parser(Handler => $filter);
+
+  my $ref = $parser->parse_uri('some_huge_file.xml');
+
+  print $ref->{part}->{'555-1234'};
+
+You can build a filter by using an XML::Simple object as a handler and setting
+its DataHandler option to point to a routine which takes the resulting tree,
+modifies it and sends it off as SAX events to a downstream handler:
+
+  my $writer = XML::SAX::Writer->new();
+  my $filter = XML::Simple->new(
+	         DataHandler => sub {
+				  my $simple = shift;
+				  my $data = shift;
+
+				  # Modify $data here
+
+				  $simple->XMLout($data, Handler => $writer);
+		                }
+               );
+  my $parser = XML::SAX::ParserFactory->parser(Handler => $filter);
+
+  $parser->parse_uri($filename);
+
+I<Note: In this last example, the 'Handler' option was specified in the call to
+C<XMLout()> but it could also have been specified in the constructor>.
+
+=head1 ENVIRONMENT
+
+If you don't care which parser module B<XML::Simple> uses then skip this
+section entirely (it looks more complicated than it really is).
+
+B<XML::Simple> will default to using a B<SAX> parser if one is available or
+B<XML::Parser> if SAX is not available.
+
+You can dictate which parser module is used by setting either the environment
+variable 'XML_SIMPLE_PREFERRED_PARSER' or the package variable
+$XML::Simple::PREFERRED_PARSER to contain the module name.  The following rules
+are used:
+
+=over 4
+
+=item *
+
+The package variable takes precedence over the environment variable if both are defined.  To force B<XML::Simple> to ignore the environment settings and use
+its default rules, you can set the package variable to an empty string.
+
+=item *
+
+If the 'preferred parser' is set to the string 'XML::Parser', then
+B<XML::Parser> will be used (or C<XMLin()> will die if B<XML::Parser> is not
+installed).
+
+=item * 
+
+If the 'preferred parser' is set to some other value, then it is assumed to be
+the name of a SAX parser module and is passed to B<XML::SAX::ParserFactory.>
+If B<XML::SAX> is not installed, or the requested parser module is not
+installed, then C<XMLin()> will die.
+
+=item *
+
+If the 'preferred parser' is not defined at all (the normal default
+state), an attempt will be made to load B<XML::SAX>.  If B<XML::SAX> is
+installed, then a parser module will be selected according to
+B<XML::SAX::ParserFactory>'s normal rules (which typically means the last SAX
+parser installed).
+
+=item *
+
+if the 'preferred parser' is not defined and B<XML::SAX> is not
+installed, then B<XML::Parser> will be used.  C<XMLin()> will die if
+B<XML::Parser> is not installed.
+
+=back
+
 =head1 ERROR HANDLING
 
 The XML standard is very clear on the issue of non-compliant documents.  An
 error in parsing any single element (for example a missing end tag) must cause
-the whole document to be rejected.  B<XML::Simple> will die with an
-appropriate message if it encounters a parsing error.
+the whole document to be rejected.  B<XML::Simple> will die with an appropriate
+message if it encounters a parsing error.
 
 If dying is not appropriate for your application, you should arrange to call
 C<XMLin()> in an eval block and look for errors in $@.  eg:
@@ -1777,138 +2234,35 @@ XML::Simple is not the right tool for your job - check out the next section.
 
 =head1 WHERE TO FROM HERE?
 
-B<XML::Simple> is by nature very simple.  
+This section is going to be re-written.  It will offer advice on what to do do
+when your parsing needs outgrow the capabilities of B<XML::Simple> (as they
+surely will).  This advice will boil down to a quick explanation of tree versus
+event based parsers and then recommend:
 
-=over 4
+For event based parsing, use SAX (do not set out to write any new code for 
+XML::Parser's handler API).
 
-=item *
-
-The parsing process liberally disposes of 'surplus' whitespace - some 
-applications will be sensitive to this.
-
-=item *
-
-Slurping data into a hash will implicitly discard information about attribute
-order.  Normally this would not be a problem because any items for which order
-is important would typically be encoded as elements rather than attributes.
-However B<XML::Simple>'s aggressive slurping and folding algorithms can
-defeat even these techniques.
-
-=item *
-
-The API offers little control over the output of C<XMLout()>.  In particular,
-it is not especially likely that feeding the output from C<XMLin()> into
-C<XMLout()> will reproduce the original XML (although passing the output from
-C<XMLout()> into C<XMLin()> should reproduce the original data structure).
-
-=item *
-
-C<XMLout()> cannot produce well formed HTML unless you feed it with care - hash
-keys must conform to XML element naming rules and undefined values should be
-avoided.
-
-=item *
-
-C<XMLout()> does not currently support encodings (although it shouldn't stand
-in your way if you feed it encoded data).
-
-=item *
-
-If you're attempting to get the output from C<XMLout()> to conform to a
-specific DTD, you're almost certainly using the wrong tool for the job.
-
-=back
-
-If any of these points are a problem for you, then B<XML::Simple> is probably
-not the right module for your application.  The following section is intended
-to give pointers which might help you select a more powerful tool - it's a bit
-sketchy right now but submissions are welcome.
-
-=over 4
-
-=item XML::Parser
-
-B<XML::Simple> is built on top of B<XML::Parser>, so if you have B<XML::Simple>
-working you already have B<XML::Parser> installed.  This is a comprehensive,
-fast, industrial strength (non-validating) parsing tool built on top of James
-Clark's 'expat' library.  It does support converting XML into a Perl tree
-structure (with full support for mixed content) but for arbritrarily large
-documents you're probably better off defining handler routines for
-B<XML::Parser> to call as each element is parsed.  The distribution includes a
-number of sample applications.
-
-=item XML::DOM
-
-The data structure returned by B<XML::Simple> was designed for convenience
-rather than standards compliance.  B<XML::DOM> is a parser built on top of
-B<XML::Parser>, which returns a 'Document' object conforming to the API of the
-Document Object Model as described at http://www.w3.org/TR/REC-DOM-Level-1 .
-This Document object can then be examined, modified and written back out to a
-file or converted to a string. 
-
-=item XML::Grove
-
-Compliance with the Document Object Model might be particularly useful when
-porting code to or from another language.  However, if you're looking for a
-simpler, 'perlish' object interface, take a look at B<XML::Grove>.
-
-=item XML::Twig
-
-XML::Twig offers a tree-oriented interface to a document while still allowing
-the processing of documents of any size. It allows processing chunks of
-documents in tree-mode which can then be flushed or purged from the memory.
-The XML::Twig page is at http://standards.ieee.org/resources/spasystem/twig/
-
-=item libxml-perl
-
-B<libxml-perl> is a collection of Perl modules, scripts, and documents for
-working with XML in Perl. The distribution includes PerlSAX - a Perl
-implementation of the SAX API.  It also include B<XML::PatAct> modules for
-processing XML by defining patterns and associating them with actions.  For more
-details see http://bitsko.slc.ut.us/libxml-perl/ .
-
-=item XML::PYX
-
-B<XML::PYX> allows you to apply Unix command pipelines (using grep, sed etc) to
-filter or transform XML files.  Ideally suited for tasks such as extracting all
-text content or stripping out all occurrences of a particular tag without
-having to write a Perl script at all.  It can also be used for transforming
-HTML to XHTML.
-
-=item XML::RAX
-
-If you wish to process XML files containing a series of 'records', B<XML::RAX>
-provides a simple purpose-designed interface.  If it still hasn't made it to
-CPAN, try: http://www.dancentury.com/robh/
-
-=item XML::Writer
-
-B<XML::Writer> is a helper module for Perl programs that write XML documents.
-
-=item XML::Dumper
-
-B<XML::Dumper> dumps Perl data to a structured XML format. B<XML::Dumper> can
-also read XML data that was previously dumped by the module and convert it back
-to Perl. 
-
-=back
-
-Don't forget to check out the Perl XML FAQ at:
-http://www.perlxml.com/faq/perl-xml-faq.html
+For tree-based parsing, you could choose between the 'Perlish' approach of
+XML::Twig and more standards based DOM implementations - preferably including
+XPath support.
 
 
 =head1 STATUS
 
-This version (1.06) is the current stable version.  
+This version (1.07b) is a beta (development) release.  The current stable
+version is 1.06.  
 
 =head1 SEE ALSO
 
-B<XML::Simple> requires B<XML::Parser> and B<File::Spec>.  The optional caching
-functions require B<Storable>.
+B<XML::Simple> requires either B<XML::Parser> or B<XML::SAX>.
+
+To generate documents with namespaces, B<XML::NamespaceSupport> is required.
+
+The optional caching functions require B<Storable>.
 
 =head1 COPYRIGHT 
 
-Copyright 1999-2001 Grant McLean E<lt>grantm@cpan.orgE<gt>
+Copyright 1999-2002 Grant McLean E<lt>grantm@cpan.orgE<gt>
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. 
