@@ -53,7 +53,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $PREFERRED_PARSER);
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
 @EXPORT_OK         = qw(xml_in xml_out);
-$VERSION           = '2.12';
+$VERSION           = '2.13';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
@@ -765,7 +765,7 @@ sub handle_options  {
   }
 
 
-  # Special cleanup for {foldattr} which could be arrayref or hashref
+  # Special cleanup for {valueattr} which could be arrayref or hashref
 
   if(exists($opt->{valueattr})) {
     if(ref($opt->{valueattr}) eq 'ARRAY') {
@@ -1247,6 +1247,7 @@ sub value_to_xml {
 
   my $nl = "\n";
 
+  my $is_root = $indent eq '' ? 1 : 0;   # Warning, dirty hack!
   if($self->{opt}->{noindent}) {
     $indent = '';
     $nl     = '';
@@ -1279,7 +1280,7 @@ sub value_to_xml {
   if(UNIVERSAL::isa($ref, 'HASH')      # It is a hash
      and keys %$ref                    # and it's not empty
      and $self->{opt}->{keyattr}       # and folding is enabled
-     and $indent                       # and its not the root element
+     and !$is_root                     # and its not the root element
   ) {
     $ref = $self->hash_to_array($name, $ref);
   }
@@ -1296,6 +1297,7 @@ sub value_to_xml {
     # Reintermediate grouped values if applicable
 
     if($self->{opt}->{grouptags}) {
+      $ref = $self->copy_hash($ref);
       while(my($key, $val) = each %$ref) {
         if($self->{opt}->{grouptags}->{$key}) {
           $ref->{$key} = { $self->{opt}->{grouptags}->{$key} => $val };
@@ -1309,7 +1311,7 @@ sub value_to_xml {
     my $nsdecls = '';
     my $default_ns_uri;
     if($self->{nsup}) {
-      $ref = { %$ref };                # Make a copy before we mess with it
+      $ref = $self->copy_hash($ref);
       $self->{nsup}->push_context();
 
       # Look for default namespace declaration first
@@ -1573,8 +1575,9 @@ sub hash_to_array {
 
     if(ref($self->{opt}->{keyattr}) eq 'HASH') {
       return($hashref) unless(defined($self->{opt}->{keyattr}->{$parent}));
-      push(@$arrayref, { $self->{opt}->{keyattr}->{$parent}->[0] => $key,
-                         %$value });
+      push @$arrayref, $self->copy_hash(
+        $value, $self->{opt}->{keyattr}->{$parent}->[0] => $key
+      );
     }
     else {
       push(@$arrayref, { $self->{opt}->{keyattr}->[0] => $key, %$value });
@@ -1584,6 +1587,22 @@ sub hash_to_array {
   return($arrayref);
 }
 
+
+##############################################################################
+# Method: copy_hash()
+#
+# Helper routine for hash_to_array().  When unfolding a hash of hashes into
+# an array of hashes, we need to copy the key from the outer hash into the
+# inner hash.  This routine makes a copy of the original hash so we don't
+# destroy the original data structure.  You might wish to override this
+# method if you're using tied hashes and don't want them to get untied.
+#
+
+sub copy_hash {
+  my($self, $orig, @extra) = @_;
+
+  return { @extra, %$orig };
+}
 
 ##############################################################################
 # Methods required for building trees from SAX events
@@ -2156,6 +2175,9 @@ It will return this simpler structure:
     searchpath => [ '/usr/bin', '/usr/local/bin', '/usr/X11/bin' ]
   }
 
+The grouping element (C<< <searchpath> >> in the example) must not contain any
+attributes or elements other than the grouped element.
+
 You can specify multiple 'grouping element' to 'grouped element' mappings in
 the same hashref.  If this option is combined with C<KeyAttr>, the array
 folding will occur first and then the grouped element names will be eliminated.
@@ -2407,7 +2429,7 @@ wish to write the XML to a file, simply supply the filename using the
 'OutputFile' option.  
 
 This option also accepts an IO handle object - especially useful in Perl 5.8.0 
-and later for writing out in an encoding other than UTF-8, eg:
+and later for output using an encoding other than UTF-8, eg:
 
   open my $fh, '>:encoding(iso-8859-1)', $path or die "open($path): $!";
   XMLout($ref, OutputFile => $fh);

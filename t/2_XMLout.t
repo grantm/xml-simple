@@ -7,7 +7,7 @@ use IO::File;
 
 $^W = 1;
 
-plan tests => 190;
+plan tests => 193;
 
 
 ##############################################################################
@@ -844,6 +844,11 @@ ok(s{\s*<dir>/usr/bin</dir>\s*<dir>/usr/local/bin</dir>\s*}{LIST}s,  'list OK');
 ok(s{\s*<dirs>LIST</dirs>\s*}{ELEM}s,  'group OK');
 like($_, qr{^<(\w+)\s*>ELEMELEMELEM</\1>$}, 'document OK');
 
+is_deeply($ref, {
+  prefix => 'before',
+  dirs   => [ '/usr/bin', '/usr/local/bin' ],
+  suffix => 'after',
+}, 'original ref is not messed with');
 
 # Try again with multiple groupings
 
@@ -955,6 +960,34 @@ $_ = XMLout($ref, NoIndent => 1);
 is_deeply(XMLin($_), $ref, 'parses ok');
 is($_, '<opt><nest>one</nest><nest>two</nest><nest>three</nest></opt>',
 'NoIndent worked ok');
+
+
+# Check 'NoIndent' works with KeyAttr
+
+$ref = {
+  person => {
+    bob  => { age => 25 },
+    kate => { age => 22 },
+  },
+};
+
+# Expect:
+#
+# <opt><person name="bob" age="25"><person name="kate" age="22"></opt>
+#
+
+$_ = XMLout($ref, NoIndent => 1, KeyAttr => {person => 'name'});
+
+is_deeply(XMLin($_), $ref, 'parses ok');
+like($_, qr{
+  <opt>
+    (
+    <person(\s+name="bob"|\s+age="25"){2}\s*/>
+    |<person(\s+name="kate"|\s+age="22"){2}\s*/>
+    ){2}
+  </opt>
+}sx,
+'NoIndent worked ok with KeyAttr');
 
 
 # Try the 'AttrIndent' option (assume NoSort defaults to off)
