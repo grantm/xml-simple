@@ -53,7 +53,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $PREFERRED_PARSER);
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
 @EXPORT_OK         = qw(xml_in xml_out);
-$VERSION           = '2.08';
+$VERSION           = '2.09';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
@@ -1810,19 +1810,29 @@ affects both C<XMLin> and C<XMLout>)
 
 =back
 
-Both C<XMLin()> and C<XMLout()> expect a single argument followed by a list of
-options.  An option takes the form of a 'name => value' pair.  The options
-listed below are marked with 'B<in>' if they are recognised by C<XMLin()> and
-'B<out>' if they are recognised by C<XMLout()>.
+The option name headings below have a trailing 'comment' - a hash followed by
+two pieces of metadata:
+
+=over 4
+
+=item *
+
+Options are marked with 'I<in>' if they are recognised by C<XMLin()> and
+'I<out>' if they are recognised by C<XMLout()>.
+
+=item *
 
 Each option is also flagged to indicate whether it is:
 
- 'important'   - don't use the module until you understand this
+ 'important'   - don't use the module until you understand this one
  'handy'       - you can skip this on the first time through
  'advanced'    - you can skip this on the second time through
- 'SAX only'    - don't worry about this unless you're using SAX
+ 'SAX only'    - don't worry about this unless you're using SAX (or
+                 alternatively if you need this, you also need SAX)
  'seldom used' - you'll probably never use this unless you were the
                  person that requested the feature
+
+=back
 
 The options are listed alphabetically:
 
@@ -1830,9 +1840,8 @@ Note: option names are no longer case sensitive so you can use the mixed case
 versions shown here; all lower case as required by versions 2.03 and earlier;
 or you can add underscores between the words (eg: key_attr).
 
-=over 4
 
-=item Cache => [ cache scheme(s) ] (B<in>) (B<advanced>)
+=head2 Cache => [ cache schemes ] I<# in - advanced>
 
 Because loading the B<XML::Parser> module and parsing an XML file can consume a
 significant number of CPU cycles, it is often desirable to cache the output of
@@ -1882,7 +1891,7 @@ the time when it was last parsed.  If the file is stored on an NFS filesystem
 synchronised with the clock where your script is run, updates to the source XML
 file may appear to be ignored.
 
-=item ContentKey => 'keyname' (B<in+out>) (B<seldom used>)
+=head2 ContentKey => 'keyname' I<# in+out - seldom used>
 
 When text content is parsed to a hash value, this option let's you specify a
 name for the hash key to override the default 'content'.  So for example:
@@ -1929,7 +1938,7 @@ rather than this (without the '-'):
     }
   }
 
-=item DataHandler => code_ref (B<in>) (B<SAX only>)
+=head2 DataHandler => code_ref I<# in - SAX only>
 
 When you use an B<XML::Simple> object as a SAX handler, it will return a
 'simple tree' data structure in the same format as C<XMLin()> would return.  If
@@ -1939,7 +1948,7 @@ B<XML::Simple> object and a reference to the data tree.  The return value from
 the subroutine will be returned to the SAX driver.  (See L<"SAX SUPPORT"> for
 more details).
 
-=item ForceArray => 1 (B<in>) (B<IMPORTANT!>)
+=head2 ForceArray => 1 I<# in - important>
 
 This option should be set to '1' to force nested elements to be represented
 as arrays even when there is only one.  Eg, with ForceArray enabled, this
@@ -1973,7 +1982,7 @@ arrays and therefore will not be candidates for folding to a hash.  (Given that
 the default value of 'KeyAttr' enables array folding, the default value of this
 option should probably also have been enabled too - sorry).
 
-=item ForceArray => [ name(s) ] (B<in>) (B<IMPORTANT!>)
+=head2 ForceArray => [ names ] I<# in - important>
 
 This alternative (and preferred) form of the 'ForceArray' option allows you to
 specify a list of element names which should always be forced into an array
@@ -1986,7 +1995,7 @@ necessary to enclose it in an arrayref.  Eg:
 
   ForceArray => qr/_list$/
 
-=item ForceContent => 1 (B<in>) (B<seldom used>)
+=head2 ForceContent => 1 I<# in - seldom used>
 
 When C<XMLin()> parses elements which have text content as well as attributes,
 the text content must be represented as a hash value rather than a simple
@@ -2009,7 +2018,7 @@ instead of:
     'y' => { 'a' => 2, 'content' => 'text2' }
   }
 
-=item GroupTags => { grouping tag => grouped tag } (B<in+out>) (B<handy>)
+=head2 GroupTags => { grouping tag => grouped tag } I<# in+out - handy>
 
 You can use this option to eliminate extra levels of indirection in your Perl
 data structure.  For example this XML:
@@ -2049,7 +2058,7 @@ the grouped elements.  Beware though that this will occur in all places that
 the 'grouping tag' name occurs - you probably don't want to use the same name
 for elements as well as attributes.
 
-=item Handler => object_ref (B<out>) (B<SAX only>)
+=head2 Handler => object_ref I<# out - SAX only>
 
 Use the 'Handler' option to have C<XMLout()> generate SAX events rather than 
 returning a string of XML.  For more details see L<"SAX SUPPORT"> below.
@@ -2062,7 +2071,7 @@ the handler object, it will be in UTF8 form regardless of the encoding you
 supply.  A future implementation of this option may generate the events 
 directly.
 
-=item KeepRoot => 1 (B<in+out>) (B<handy>)
+=head2 KeepRoot => 1 I<# in+out - handy>
 
 In its attempt to return a data structure free of superfluous detail and
 unnecessary levels of indirection, C<XMLin()> normally discards the root
@@ -2079,7 +2088,7 @@ Similarly, setting the 'KeepRoot' option to '1' will tell C<XMLout()> that the
 data structure already contains a root element name and it is not necessary to
 add another.
 
-=item KeyAttr => [ list ] (B<in+out>) (B<IMPORTANT!>)
+=head2 KeyAttr => [ list ] I<# in+out - important>
 
 This option controls the 'array folding' feature which translates nested
 elements from an array to a hash.  It also controls the 'unfolding' of hashes
@@ -2135,7 +2144,7 @@ C<ForceArray> option.  Without 'ForceArray', a single nested element will be
 rolled up into a scalar rather than an array and therefore will not be folded
 (since only arrays get folded).
 
-=item KeyAttr => { list } (B<in+out>) (B<IMPORTANT!>)
+=head2 KeyAttr => { list } I<# in+out - important>
 
 This alternative (and preferred) method of specifiying the key attributes
 allows more fine grained control over which elements are folded and on which
@@ -2193,64 +2202,54 @@ A '-' prefix would produce this result:
 
 As described earlier, C<XMLout> will ignore hash keys starting with a '-'.
 
-=item NoAttr => 1 (B<in+out>) (B<handy>)
+=head2 NoAttr => 1 I<# in+out - handy>
 
 When used with C<XMLout()>, the generated XML will contain no attributes.
 All hash key/values will be represented as nested elements instead.
 
 When used with C<XMLin()>, any attributes in the XML will be ignored.
 
-=item NormaliseSpace => 0 | 1 | 2 (B<in>) (B<handy>)
+=head2 NormaliseSpace => 0 | 1 | 2 I<# in - handy>
 
 This option controls how whitespace in text content is handled.  Recognised
 values for the option are:
 
 =over 4
 
-=item 0
+=item *
 
-the default behaviour is for whitespace to be passed through unaltered (except
-of course for the normalisation of whitespace in attribute values which is
-mandated by the XML recommendation)
+0 = (default) whitespace is passed through unaltered (except of course for the
+normalisation of whitespace in attribute values which is mandated by the XML
+recommendation)
 
-=item 1
+=item *
 
-whitespace is normalised in any value used as a hash key (normalising means
+1 = whitespace is normalised in any value used as a hash key (normalising means
 removing leading and trailing whitespace and collapsing sequences of whitespace
 characters to a single space)
 
-=item 2
+=item *
 
-whitespace is normalised in all text content
+2 = whitespace is normalised in all text content
 
 =back
 
 Note: you can spell this option with a 'z' if that is more natural for you.
 
-=item RootName => 'string' (B<out>) (B<handy>)
-
-By default, when C<XMLout()> generates XML, the root element will be named
-'opt'.  This option allows you to specify an alternative name.
-
-Specifying either undef or the empty string for the RootName option will
-produce XML with no root elements.  In most cases the resulting XML fragment
-will not be 'well formed' and therefore could not be read back in by C<XMLin()>.
-Nevertheless, the option has been found to be useful in certain circumstances.
-
-=item NoEscape => 1 (B<out>) (B<seldom used>)
+=head2 NoEscape => 1 I<# out - seldom used>
 
 By default, C<XMLout()> will translate the characters 'E<lt>', 'E<gt>', '&' and
 '"' to '&lt;', '&gt;', '&amp;' and '&quot' respectively.  Use this option to
 suppress escaping (presumably because you've already escaped the data in some
 more sophisticated manner).
 
-=item NoIndent => 1 (B<out>) (B<seldom used>)
+=head2 NoIndent => 1 I<# out - seldom used>
 
 Set this option to 1 to disable C<XMLout()>'s default 'pretty printing' mode.
 With this option enabled, the XML output will all be on one line (unless there
 are newlines in the data) - this may be easier for downstream processing.
 
-=item NSExpand => 1 (B<in+out>) (B<handy - SAX only>)
+=head2 NSExpand => 1 I<# in+out handy - SAX only>
 
 This option controls namespace expansion - the translation of element and
 attribute names of the form 'prefix:name' to '{uri}name'.  For example the
@@ -2272,24 +2271,33 @@ C<XMLout> will emit XML which is not well formed.
 I<Note: You must have the XML::NamespaceSupport module installed if you want
 C<XMLout()> to translate URIs back to prefixes>.
 
-=item OutputFile => <file specifier> (B<out>) (B<handy>)
+=head2 OutputFile => <file specifier> I<# out - handy>
 
 The default behaviour of C<XMLout()> is to return the XML as a string.  If you
 wish to write the XML to a file, simply supply the filename using the
 'OutputFile' option.  Alternatively, you can supply an IO handle object instead
 of a filename.
 
-=item ParserOpts => [ XML::Parser Options ] (B<in>) (B<don't use this>)
+=head2 ParserOpts => [ XML::Parser Options ] I<# in - don't use this>
 
 I<Note: This option is now officially deprecated.  If you find it useful, email
 the author with an example of what you use it for.  Do not use this option to
 set the ProtocolEncoding, that's just plain wrong - fix the XML>.
 
-Use this option to specify parameters that should be passed to the constructor
-of the underlying XML::Parser object (which of course assumes you're not using
-SAX).
+This option allows you to pass parameters to the constructor of the underlying
+XML::Parser object (which of course assumes you're not using SAX).
 
-=item SearchPath => [ list ] (B<in>) (B<handy>)
+=head2 RootName => 'string' I<# out - handy>
+
+By default, when C<XMLout()> generates XML, the root element will be named
+'opt'.  This option allows you to specify an alternative name.
+
+Specifying either undef or the empty string for the RootName option will
+produce XML with no root elements.  In most cases the resulting XML fragment
+will not be 'well formed' and therefore could not be read back in by C<XMLin()>.
+Nevertheless, the option has been found to be useful in certain circumstances.
+
+=head2 SearchPath => [ list ] I<# in - handy>
 
 If you pass C<XMLin()> a filename, but the filename include no directory
 component, you can use this option to specify which directories should be
@@ -2303,7 +2311,7 @@ If the first parameter to C<XMLin()> is undefined, the default SearchPath
 will contain only the directory in which the script itself is located.
 Otherwise the default SearchPath will be empty.  
 
-=item SuppressEmpty => 1 | '' | undef (B<in> + B<out>) (B<handy>)
+=head2 SuppressEmpty => 1 | '' | undef I<# in+out - handy>
 
 This option controls what C<XMLin()> should do with empty elements (no
 attributes and no content).  The default behaviour is to represent them as
@@ -2317,7 +2325,7 @@ The option also controls what C<XMLout()> does with undefined values.
 Setting the option to undef causes undefined values to be output as
 empty elements (rather than empty attributes).
 
-=item Variables => { name => value } (B<in>) (B<handy>)
+=head2 Variables => { name => value } I<# in - handy>
 
 This option allows variables in the XML to be expanded when the file is read.
 (there is no facility for putting the variable names back if you regenerate
@@ -2328,7 +2336,7 @@ value or in the text content of an element.  If 'name' matches a key in the
 supplied hashref, C<${name}> will be replaced with the corresponding value from
 the hashref.  If no matching key is found, the variable will not be replaced.
 
-=item VarAttr => 'attr_name' (B<in>) (B<handy>)
+=head2 VarAttr => 'attr_name' I<# in - handy>
 
 In addition to the variables defined using C<Variables>, this option allows
 variables to be defined in the XML.  A variable definition consists of an
@@ -2356,7 +2364,7 @@ produces the following data structure:
            }
   }
 
-=item XMLDecl => 1  or  XMLDecl => 'string'  (B<out>) (B<handy>)
+=head2 XMLDecl => 1  or  XMLDecl => 'string'  I<# out - handy>
 
 If you want the output from C<XMLout()> to start with the optional XML
 declaration, simply set the option to '1'.  The default XML declaration is:
@@ -2366,8 +2374,6 @@ declaration, simply set the option to '1'.  The default XML declaration is:
 If you want some other string (for example to declare an encoding value), set
 the value of this option to the complete string you require.
 
-
-=back
 
 =head1 OPTIONAL OO INTERFACE
 
@@ -2427,7 +2433,7 @@ the following common mistakes will be detected and treated as fatal errors
 =item *
 
 Failing to explicitly set the C<KeyAttr> option - if you can't be bothered
-reading about this option, turn it off with: KeyAttr => []
+reading about this option, turn it off with: KeyAttr => [ ]
 
 =item *
 
@@ -2794,7 +2800,7 @@ You don't need help converting between different encodings
 In a serious XML project, you'll probably outgrow these assumptions fairly
 quickly.  This section of the document used to offer some advice on chosing a
 more powerful option.  That advice has now grown into the 'Perl-XML FAQ'
-document which you can find at: L<http://www.perlxml.net/perl-xml-faq.dkb>
+document which you can find at: L<http://perl-xml.sourceforge.net/faq/>
 
 The advice in the FAQ boils down to a quick explanation of tree versus
 event based parsers and then recommends:
@@ -2809,7 +2815,7 @@ XPath support.
 
 =head1 STATUS
 
-This version (2.08) is the current stable version.
+This version (2.09) is the current stable version.
 
 =head1 SEE ALSO
 
