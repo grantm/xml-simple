@@ -5,7 +5,10 @@ use strict;
 use Test::More;
 use IO::File;
 
+$^W = 1;
+
 plan tests => 192;
+
 
 ##############################################################################
 #                   S U P P O R T   R O U T I N E S
