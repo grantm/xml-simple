@@ -15,6 +15,7 @@ t/5_MemCopy.t
 t/6_ObjIntf.t
 t/7_SaxStuff.t
 t/8_Namespaces.t
+t/9_Strict.t
 t/desertnet.src
 t/lib/TagsToUpper.pm
 t/subdir/test2.xml
