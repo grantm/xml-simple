@@ -1,5 +1,16 @@
 Revision history for Perl module XML::Simple
 
+2.10  Feb 29 2004
+      - Added AttrIndent option (patch from Volker Moell)
+      - Hash keys are now sorted alphabetically by default; enable the
+        new NoSort option if you don't want this (patch from Volker Moell)
+      - Fixed bug where disabling array folding broke anonymous array handling
+      - Fixed bug when unfolding a tied hash
+      - SuppressEmpty patch from Douglas Wilson
+      - Numerous test improvements - Devel::Cover rocks!
+      - POD update re XMLin(XMLout($data)) caveats (bug report from Slaven
+        Rezic)
+
 2.09  Sep 09 2003
       - Makefile.PL makeover contributed by Joshua Keroes
       - fixed hash ordering assumption in test script (reported by Michel
