@@ -68,6 +68,7 @@ my $DefContentKey  = qq(content);
 my $DefXmlDecl     = qq(<?xml version='1.0' standalone='yes'?>);
 
 my $xmlns_ns       = 'http://www.w3.org/2000/xmlns/';
+my $def_ns_jcn     = '{' . $xmlns_ns . '}';
 
 
 ##############################################################################
@@ -462,6 +463,7 @@ sub XMLout {
   if($self->{opt}->{nsexpand}) {
     require XML::NamespaceSupport;
     $self->{nsup} = XML::NamespaceSupport->new();
+    $self->{ns_prefix} = 'aaa';
   }
 
 
@@ -628,7 +630,13 @@ sub handle_options  {
     $opt->{cache} = [ $opt->{cache} ];
   }
   
-  unless(exists($opt->{parseropts})) {
+  if(exists($opt->{parseropts})) {
+    if($^W) {
+      carp "Warning: " .
+           "'parseropts' is deprecated, contact the author if you need it";
+    }
+  }
+  else {
     $opt->{parseropts} = [ ];
   }
 
@@ -969,17 +977,6 @@ sub value_to_xml {
   my $nl = "\n";
 
 
-  # Translate Clarkian names back to prefix:name form
-
-  if($self->{nsup}) {
-    my($uri, $lname) = $self->{nsup}->parse_jclark_notation($name);
-    if($uri) {
-      my $prefix = $self->{nsup}->get_prefix($uri);
-      $name = "$prefix:$lname";
-    }
-  }
-
-
   # Convert to XML
   
   if(ref($ref)) {
@@ -1022,9 +1019,22 @@ sub value_to_xml {
     # Scan for namespace declaration attributes
 
     my $nsdecls = '';
+    my $default_ns_uri;
     if($self->{nsup}) {
       $ref = { %$ref };                # Make a copy before we mess with it
       $self->{nsup}->push_context();
+
+      # Look for default namespace declaration first
+
+      if(exists($ref->{$def_ns_jcn})) {
+	$self->{nsup}->declare_prefix('', $ref->{$def_ns_jcn});
+	$nsdecls .= qq( xmlns="$ref->{$def_ns_jcn}"); 
+	delete($ref->{$def_ns_jcn});
+      }
+      $default_ns_uri = $self->{nsup}->get_uri('');
+
+
+      # Then check all the other keys
 
       foreach my $qname (keys(%$ref)) {
 	my($uri, $lname) = $self->{nsup}->parse_jclark_notation($qname);
@@ -1042,12 +1052,22 @@ sub value_to_xml {
       foreach my $qname (keys(%$ref)) {
 	my($uri, $lname) = $self->{nsup}->parse_jclark_notation($qname);
 	if($uri) {
-	  my $prefix = $self->{nsup}->get_prefix($uri);
-	  unless($prefix) {
-	    $prefix = $self->{nsup}->declare_prefix(undef, $uri);
+	  if($default_ns_uri  and  $uri eq $default_ns_uri) {
+	    $ref->{$lname} = $ref->{$qname};
+	    delete($ref->{$qname});
 	  }
-	  $ref->{"$prefix:$lname"} = $ref->{$qname};
-	  delete($ref->{$qname});
+	  else {
+	    my $prefix = $self->{nsup}->get_prefix($uri);
+	    unless($prefix) {
+	      # $self->{nsup}->declare_prefix(undef, $uri);
+	      # $prefix = $self->{nsup}->get_prefix($uri);
+	      $prefix = $self->{ns_prefix}++;
+	      $self->{nsup}->declare_prefix($prefix, $uri);
+	      $nsdecls .= qq( xmlns:$prefix="$uri"); 
+	    }
+	    $ref->{"$prefix:$lname"} = $ref->{$qname};
+	    delete($ref->{$qname});
+	  }
         }
       }
     }
