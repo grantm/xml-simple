@@ -12,23 +12,6 @@ use Test::Harness qw(&runtests $verbose);
 
 $verbose = 0;
 
-#############################################################################
-# Confirm prerequisite modules are present
-#
-
-eval { require File::Basename };
-die $@ if($@);
-
-eval { require XML::Parser };
-die $@ if($@);
-
-unless($INC{'File/Spec'}) {     # Should already be loaded by XML::Parser
-  eval { require File::Spec };
-  die $@ if($@);
-}
-
-print "Prerequisite modules are present\n";
-
 
 #############################################################################
 # Are we in the right directory?  If not, the pathname component of $0
