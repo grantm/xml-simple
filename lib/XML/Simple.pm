@@ -52,7 +52,7 @@ use vars qw($VERSION @ISA @EXPORT $PREFERRED_PARSER);
 
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
-$VERSION           = '2.02';
+$VERSION           = '2.03';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
@@ -514,7 +514,10 @@ sub XMLout {
 
   # Encode the hashref and write to file if necessary
 
-  my $xml = $self->value_to_xml($ref, $self->{opt}->{rootname}, {}, '');
+  $self->{_ancestors} = [];
+  my $xml = $self->value_to_xml($ref, $self->{opt}->{rootname}, '');
+  delete $self->{_ancestors};
+
   if($self->{opt}->{xmldecl}) {
     $xml = $self->{opt}->{xmldecl} . "\n" . $xml;
   }
@@ -993,7 +996,6 @@ sub array_to_hash {
 # Arguments expected are:
 # - the data structure to be encoded (usually a reference)
 # - the XML tag name to use for this item
-# - a hashref of references already encoded (to detect circular structures)
 # - a string of spaces for use as the current indent level
 #
 
@@ -1003,7 +1005,7 @@ sub value_to_xml {
 
   # Grab the other arguments
 
-  my($ref, $name, $encoded, $indent) = @_;
+  my($ref, $name, $indent) = @_;
 
   my $named = (defined($name) and $name ne '' ? 1 : 0);
 
@@ -1013,8 +1015,9 @@ sub value_to_xml {
   # Convert to XML
   
   if(ref($ref)) {
-    croak "circular data structures not supported" if($encoded->{$ref});
-    $encoded->{$ref} = $ref;
+    croak "circular data structures not supported"
+      if(grep($_ == $ref, @{$self->{_ancestors}}));
+    push @{$self->{_ancestors}}, $ref;
   }
   else {
     if($named) {
@@ -1125,7 +1128,7 @@ sub value_to_xml {
 	}
 	if(ref($value)  or  $self->{opt}->{noattr}) {
 	  push @nested,
-	    $self->value_to_xml($value, $key, $encoded, "$indent  ");
+	    $self->value_to_xml($value, $key, "$indent  ");
 	}
 	else {
 	  $value = $self->escape_value($value) unless($self->{opt}->{noescape});
@@ -1179,12 +1182,12 @@ sub value_to_xml {
 	     '</', $name, ">\n";
       }
       elsif(UNIVERSAL::isa($value, 'HASH')) {
-	push @result, $self->value_to_xml($value, $name, $encoded, $indent);
+	push @result, $self->value_to_xml($value, $name, $indent);
       }
       else {
 	push @result,
 	       $indent, '<', $name, ">\n",
-	       $self->value_to_xml($value, 'anon', $encoded, "$indent  "),
+	       $self->value_to_xml($value, 'anon', "$indent  "),
 	       $indent, '</', $name, ">\n";
       }
     }
@@ -1193,6 +1196,9 @@ sub value_to_xml {
   else {
     croak "Can't encode a value of type: " . ref($ref);
   }
+
+
+  pop @{$self->{_ancestors}} if(ref($ref));
 
   return(join('', @result));
 }
@@ -2416,7 +2422,7 @@ XPath support.
 
 =head1 STATUS
 
-This version (2.02) is the current stable version.
+This version (2.03) is the current stable version.
 
 =head1 SEE ALSO
 
@@ -2428,7 +2434,7 @@ The optional caching functions require L<Storable>.
 
 =head1 COPYRIGHT 
 
-Copyright 1999-2002 Grant McLean E<lt>grantm@cpan.orgE<gt>
+Copyright 1999-2003 Grant McLean E<lt>grantm@cpan.orgE<gt>
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. 
