@@ -36,7 +36,7 @@ eval {
 };
 
 isnt($@, '', 'omitting forcearray was a fatal error');
-like($@, qr/No value specified for 'forcearray'/, 
+like($@, qr/(?i)No value specified for 'forcearray'/, 
   'with the correct error message');
 
 
@@ -47,7 +47,7 @@ eval {
 };
 
 isnt($@, '', 'omitting keyattr was a fatal error');
-like($@, qr/No value specified for 'keyattr'/,
+like($@, qr/(?i)No value specified for 'keyattr'/,
   'with the correct error message');
 
 
@@ -58,7 +58,7 @@ eval {
 };
 
 isnt($@, '', 'omitting forcearray for elements in keyattr was a fatal error');
-like($@, qr/<part> set in keyattr but not in forcearray/,
+like($@, qr/(?i)<part> set in keyattr but not in forcearray/,
   'with the correct error message');
 
 
@@ -67,7 +67,7 @@ eval {
 };
 
 isnt($@, '', 'omitting keyattr elements from forcearray was a fatal error');
-like($@, qr/<part> set in keyattr but not in forcearray/,
+like($@, qr/(?i)<part> set in keyattr but not in forcearray/,
   'with the correct error message');
 
 
@@ -86,7 +86,7 @@ eval {
 };
 
 isnt($@, '', 'key attribute missing from names element was a fatal error');
-like($@, qr/<part> element has no 'partnum' key attribute/,
+like($@, qr/(?i)<part> element has no 'partnum' key attribute/,
   'with the correct error message');
 
 
@@ -106,7 +106,7 @@ eval {
 };
 
 isnt($@, '', 'key attribute not a scalar was a fatal error');
-like($@, qr/<item> element has non-scalar 'name' key attribute/,
+like($@, qr/(?i)<item> element has non-scalar 'name' key attribute/,
   'with the correct error message');
 
 
@@ -145,7 +145,7 @@ eval {
 };
 
 isnt($@, '', 'omitting keyattr was a fatal error');
-like($@, qr/No value specified for 'keyattr'/,
+like($@, qr/(?i)No value specified for 'keyattr'/,
   'with the correct error message');
 
 
@@ -179,7 +179,7 @@ eval {
 };
 
 isnt($@, '', 'omitting forcearray was a fatal error');
-like($@, qr/No value specified for 'forcearray'/, 
+like($@, qr/(?i)No value specified for 'forcearray'/, 
   'with the correct error message');
 
 
@@ -192,7 +192,7 @@ eval {
 };
 
 isnt($@, '', 'omitting keyattr was a fatal error');
-like($@, qr/No value specified for 'keyattr'/,
+like($@, qr/(?i)No value specified for 'keyattr'/,
   'with the correct error message');
 
 
@@ -205,7 +205,7 @@ eval {
 };
 
 isnt($@, '', 'omitting forcearray for elements in keyattr was a fatal error');
-like($@, qr/<part> set in keyattr but not in forcearray/,
+like($@, qr/(?i)<part> set in keyattr but not in forcearray/,
   'with the correct error message');
 
 
@@ -216,7 +216,7 @@ eval {
 };
 
 isnt($@, '', 'omitting keyattr elements from forcearray was a fatal error');
-like($@, qr/<part> set in keyattr but not in forcearray/,
+like($@, qr/(?i)<part> set in keyattr but not in forcearray/,
   'with the correct error message');
 
 
@@ -236,7 +236,7 @@ eval {
 };
 
 isnt($@, '', 'key attribute missing from names element was a fatal error');
-like($@, qr/<part> element has no 'partnum' key attribute/,
+like($@, qr/(?i)<part> element has no 'partnum' key attribute/,
   'with the correct error message');
 
 
@@ -258,7 +258,7 @@ eval {
 };
 
 isnt($@, '', 'key attribute not a scalar was a fatal error');
-like($@, qr/<item> element has non-scalar 'name' key attribute/,
+like($@, qr/(?i)<item> element has non-scalar 'name' key attribute/,
   'with the correct error message');
 
 
@@ -301,7 +301,7 @@ eval {
 };
 
 isnt($@, '', 'omitting keyattr was a fatal error');
-like($@, qr/No value specified for 'keyattr'/,
+like($@, qr/(?i)No value specified for 'keyattr'/,
   'with the correct error message');
 
 

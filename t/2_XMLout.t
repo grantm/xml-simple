@@ -5,7 +5,7 @@ use strict;
 use Test::More;
 use IO::File;
 
-plan tests => 174;
+plan tests => 190;
 
 ##############################################################################
 #                   S U P P O R T   R O U T I N E S
@@ -681,6 +681,13 @@ $_ = XMLout($ref, contentkey => 'text_content');
 like($_, qr{^\s*<opt\s+one="1">text</opt>\s*$}s, 'even when name changed');
 
 
+# and also if we add the '-' prefix
+
+$_ = XMLout($ref, contentkey => '-text_content');
+
+like($_, qr{^\s*<opt\s+one="1">text</opt>\s*$}s, 'even with "-" prefix');
+
+
 # Check 'noattr' option
 
 $ref = {
@@ -748,6 +755,129 @@ ok(s{\s*<(hex)>0x20</\1>\s*}{32}s, 'scalar 2.1 mapped OK');
 ok(s{\s*<(word)>thirty two</\1>\s*}{32}s, 'scalar 2.1 mapped OK');
 ok(s{\s*<(number)>323232</\1>\s*}{NUM}s, 'element 2 OK');
 like($_, qr{^<(\w+)\s*>NUMNUM</\1>$}, 'document OK');
+
+
+# Check grouped tags get ungrouped correctly
+
+$ref = {
+  prefix => 'before',
+  dirs   => [ '/usr/bin', '/usr/local/bin' ],
+  suffix => 'after',
+};
+
+# Expect:
+#
+# <opt>
+#   <prefix>before</prefix>
+#   <dirs>
+#     <dir>/usr/bin</dir>
+#     <dir>/usr/local/bin</dir>
+#   </dirs>
+#   <suffix>after</suffix>
+# </opt>
+#
+
+$_ = XMLout($ref, grouptags => {dirs => 'dir'}, noattr => 1);
+
+ok(s{\s*<(prefix)>before</\1>\s*}{ELEM}s, 'prefix OK');
+ok(s{\s*<(suffix)>after</\1>\s*}{ELEM}s,  'suffix OK');
+ok(s{\s*<dir>/usr/bin</dir>\s*<dir>/usr/local/bin</dir>\s*}{LIST}s,  'list OK');
+ok(s{\s*<dirs>LIST</dirs>\s*}{ELEM}s,  'group OK');
+like($_, qr{^<(\w+)\s*>ELEMELEMELEM</\1>$}, 'document OK');
+
+
+# Try again with multiple groupings
+
+$ref = {
+  dirs   => [ '/usr/bin', '/usr/local/bin' ],
+  terms  => [ 'vt100', 'xterm' ],
+};
+
+# Expect:
+#
+# <opt>
+#   <dirs>
+#     <dir>/usr/bin</dir>
+#     <dir>/usr/local/bin</dir>
+#   </dirs>
+#   <terms>
+#     <term>vt100</term>
+#     <term>xterm</term>
+#   </terms>
+# </opt>
+#
+
+$_ = XMLout($ref, grouptags => {dirs => 'dir', terms => 'term'}, noattr => 1);
+
+ok(s{\s*<dir>/usr/bin</dir>\s*<dir>/usr/local/bin</dir>\s*}{LIST}s,  'list 1 OK');
+ok(s{\s*<dirs>LIST</dirs>\s*}{ELEM}s,  'group 1 OK');
+ok(s{\s*<term>vt100</term>\s*<term>xterm</term>\s*}{LIST}s,  'list 2 OK');
+ok(s{\s*<terms>LIST</terms>\s*}{ELEM}s,  'group 2 OK');
+like($_, qr{^<(\w+)\s*>ELEMELEM</\1>$}, 'document OK');
+
+
+# Confirm unfolding and grouping work together
+
+$ref = {
+  dirs   => {
+              first   => { content => '/usr/bin'       }, 
+              second  => { content => '/usr/local/bin' },
+            },
+};
+
+# Expect:
+#
+# <opt>
+#   <dirs>
+#     <dir name="first">/usr/bin</dir>
+#     <dir name="second">/usr/local/bin</dir>
+#   </dirs>
+# </opt>
+#
+
+$_ = XMLout($ref, 
+  grouptags => {dirs => 'dir'}, keyattr => {dir => 'name'},
+);
+
+ok(s{\s*<dir\s+name="first">/usr/bin</dir>\s*}{ITEM}s, 'item 1 OK');
+ok(s{\s*<dir\s+name="second">/usr/local/bin</dir>\s*}{ITEM}s, 'item 2 OK');
+ok(s{\s*<dirs>ITEMITEM</dirs>\s*}{GROUP}s,  'group OK');
+like($_, qr{^<(\w+)\s*>GROUP</\1>$}, 'document OK');
+
+
+# Combine unfolding, grouping and stripped content - watch it fail :-(
+
+$ref = {
+  dirs   => {
+              first   => '/usr/bin',
+              second  => '/usr/local/bin'
+            },
+};
+
+# Expect:
+#
+# <opt>
+#   <dirs first="/usr/bin" second="/usr/local/bin" />
+# </opt>
+#
+
+$_ = XMLout($ref, 
+  grouptags => {dirs => 'dir'}, keyattr => {dir => 'name'}, 
+  contentkey => '-content'
+);
+
+like($_, qr{
+  ^<(\w+)>\s*
+    <dirs>\s*
+      <dir
+        (?:
+          \s+first="/usr/bin"
+         |\s+second="/usr/local/bin"
+        ){2}\s*
+      />\s*
+    </dirs>\s*
+  </\1>$
+}x, 'Failed to unwrap/group stripped content - as expected');
 
 
 # 'Stress test' with a data structure that maps to several thousand elements.

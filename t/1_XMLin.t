@@ -15,14 +15,14 @@ unless(-e $XMLFile) {
   plan skip_all => 'Test data missing';
 }
 
-plan tests => 66;
+plan tests => 93;
 
 
 $@ = '';
 eval "use XML::Simple;";
 is($@, '', 'Module compiled OK');
-unless($XML::Simple::VERSION eq '2.03') {
-  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.03)");
+unless($XML::Simple::VERSION eq '2.04') {
+  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.04)");
 }
 
 
@@ -134,13 +134,14 @@ $target = {
             {name => 'item2', attr1 => 'value3', attr2 => 'value4' }
 	  ]
 };
-$opt = XMLin($string, keyattr => [] );
+my @cont_key = (contentkey => '-content');
+$opt = XMLin($string, keyattr => [], @cont_key);
 is_deeply($opt, $target, 'not folded when keyattr turned off');
 
 
 # Same again with alternative key suppression
 
-$opt = XMLin($string, keyattr => {} );
+$opt = XMLin($string, keyattr => {}, @cont_key);
 is_deeply($opt, $target, 'still works when keyattr is empty hash');
 
 
@@ -151,7 +152,7 @@ $opt = XMLin(q(
     <item key="item1" attr1="value1" attr2="value2" />
     <item key="item2" attr1="value3" attr2="value4" />
   </opt>
-));
+), @cont_key);
 is_deeply($opt, {
   item => {
             item1 => { attr1 => 'value1', attr2 => 'value2' },
@@ -165,7 +166,7 @@ $opt = XMLin(q(
     <item id="item1" attr1="value1" attr2="value2" />
     <item id="item2" attr1="value3" attr2="value4" />
   </opt>
-));
+), @cont_key);
 is_deeply($opt, {
   item => {
             item1 => { attr1 => 'value1', attr2 => 'value2' },
@@ -189,26 +190,38 @@ $target = {
 	  }
 };
 
-$opt = XMLin($xml, keyattr => [qw(xname)]);
+$opt = XMLin($xml, keyattr => [qw(xname)], @cont_key);
 is_deeply($opt, $target, "folded on non-default key 'xname'");
 
 
 # And with precise element/key specification
 
-$opt = XMLin($xml, keyattr => { 'item' => 'xname' });
+$opt = XMLin($xml, keyattr => { 'item' => 'xname' }, @cont_key);
 is_deeply($opt, $target, 'same again but keyattr set with hash');
 
 
 # Same again but with key field further down the list
 
-$opt = XMLin($xml, keyattr => [qw(wibble xname)]);
+$opt = XMLin($xml, keyattr => [qw(wibble xname)], @cont_key);
 is_deeply($opt, $target, 'keyattr as array with value in second position');
 
 
 # Same again but with key field supplied as scalar
 
-$opt = XMLin($xml, keyattr => qw(xname));
+$opt = XMLin($xml, keyattr => qw(xname), @cont_key);
 is_deeply($opt, $target, 'keyattr as scalar');
+
+
+# Same again but with mixed-case option name
+
+$opt = XMLin($xml, KeyAttr => qw(xname), @cont_key);
+is_deeply($opt, $target, 'KeyAttr as scalar');
+
+
+# Same again but with underscores in option name
+
+$opt = XMLin($xml, key_attr => qw(xname), @cont_key);
+is_deeply($opt, $target, 'key_attr as scalar');
 
 
 # Weird variation, not exactly what we wanted but it is what we expected 
@@ -229,7 +242,7 @@ $target = { item => {
   }
 };
 
-$opt = XMLin($xml);
+$opt = XMLin($xml, @cont_key);
 is_deeply($opt, $target, 'fold same array on two different keys');
 
 
@@ -241,7 +254,7 @@ $target = { item => {
     'three' => { 'value' => '3' },
   }
 };
-$opt = XMLin($xml, keyattr => { 'item' => 'id' });
+$opt = XMLin($xml, keyattr => { 'item' => 'id' }, @cont_key);
 is_deeply($opt, $target, 'same again but with priority switch');
 
 
@@ -281,7 +294,8 @@ $target = {
   }
 };
 
-$opt = XMLin($xml, forcearray => 1, keyattr => { 'car' => 'license', 'option' => 'pn' });
+$opt = XMLin($xml, forcearray => 1,
+  keyattr => { 'car' => 'license', 'option' => 'pn' }, @cont_key);
 is_deeply($opt, $target, 'folded on multi-key keyattr hash');
 
 
@@ -313,7 +327,7 @@ $target = {
     }
   }
 };
-$opt = XMLin($xml, forcearray => 1, keyattr => { 'car' => '+license', 'option' => '-pn' });
+$opt = XMLin($xml, forcearray => 1, keyattr => { 'car' => '+license', 'option' => '-pn' }, @cont_key);
 is_deeply($opt, $target, "same again but with '+' prefix to copy keys");
 
 
@@ -338,20 +352,22 @@ $target = {
   ]
 };
 
-$opt = XMLin($xml);
+$opt = XMLin($xml, @cont_key);
 is_deeply($opt, $target, "did not fold on default key with non-scalar value");
 
-$opt = XMLin($xml, keyattr => { item => 'name' });
+$opt = XMLin($xml, keyattr => { item => 'name' }, @cont_key);
 is_deeply($opt, $target, "did not fold on specific key with non-scalar value");
 
 
 # Make sure that the root element name is preserved if we ask for it
 
 $target = XMLin("<opt>$xml</opt>", forcearray => 1,
-                keyattr => { 'car' => '+license', 'option' => '-pn' });
+                keyattr => { 'car' => '+license', 'option' => '-pn' },
+                @cont_key);
 
 $opt    = XMLin(      $xml,        forcearray => 1, keeproot => 1,
-                keyattr => { 'car' => '+license', 'option' => '-pn' });
+                keyattr => { 'car' => '+license', 'option' => '-pn' }, 
+                @cont_key);
 
 is_deeply($opt, $target, 'keeproot option works');
 
@@ -359,13 +375,13 @@ is_deeply($opt, $target, 'keeproot option works');
 # confirm that CDATA sections parse correctly
 
 $xml = q{<opt><cdata><![CDATA[<greeting>Hello, world!</greeting>]]></cdata></opt>};
-$opt = XMLin($xml);
+$opt = XMLin($xml, @cont_key);
 is_deeply($opt, {
   'cdata' => '<greeting>Hello, world!</greeting>'
 }, 'CDATA section parsed correctly');
 
 $xml = q{<opt><x><![CDATA[<y>one</y>]]><![CDATA[<y>two</y>]]></x></opt>};
-$opt = XMLin($xml);
+$opt = XMLin($xml, @cont_key);
 is_deeply($opt, {
   'x' => '<y>one</y><y>two</y>'
 }, 'CDATA section containing markup characters parsed correctly');
@@ -396,7 +412,7 @@ is_deeply($opt, {
 $@ = '';
 $opt = eval {
   XMLin('test2.xml', searchpath => [
-    'dir1', 'dir2', File::Spec->catdir('t', 'subdir')
+    'dir1', 'dir2', File::Spec->catdir('t', 'subdir'), @cont_key
   ] );
 
 };
@@ -424,7 +440,7 @@ my $fh = new IO::File;
 $XMLFile = File::Spec->catfile('t', '1_XMLin.xml');  # t/1_XMLin.xml
 eval {
   $fh->open($XMLFile) || die "$!";
-  $opt = XMLin($fh);
+  $opt = XMLin($fh, @cont_key);
 };
 is($@, '', "XMLin didn't choke on an IO::File object");
 is($opt->{location}, 't/1_XMLin.xml', 'and it parsed the right file');
@@ -456,7 +472,7 @@ $opt = XMLin(q(
       <anon>2.0</anon><anon>2.1</anon><anon>2.2</anon>
     </row>
   </opt>
-));
+), @cont_key);
 is_deeply($opt, {
   row => [
 	   [ '0.0', '0.1', '0.2' ],
@@ -474,7 +490,7 @@ $opt = XMLin(q{
     <anon>two</anon>
     <anon>three</anon>
   </opt>
-});
+}, @cont_key);
 is_deeply($opt, [
   qw(one two three)
 ], 'top level anonymous array returned arrayref');
@@ -491,7 +507,7 @@ $opt = XMLin(q(
       </anon>
     </anon>
   </opt>
-));
+), @cont_key);
 is_deeply($opt, [
   1,
   [
@@ -558,11 +574,37 @@ is_deeply($opt, {
 }, "even when we change it's name to 'text'");
 
 
+# Confirm that spurious 'content' keys are *not* eliminated after array folding
+
+$xml = q(<opt><x y="one">First</x><x y="two">Second</x></opt>);
+$opt = XMLin($xml, forcearray => [ 'x' ], keyattr => {x => 'y'});
+is_deeply($opt, { 
+  x => {
+    one => { content => 'First'  },
+    two => { content => 'Second' },
+  }
+}, "spurious content keys not eliminated after folding");
+
+
+# unless we ask nicely
+
+$xml = q(<opt><x y="one">First</x><x y="two">Second</x></opt>);
+$opt = XMLin(
+  $xml, forcearray => [ 'x' ], keyattr => {x => 'y'}, contentkey => '-content'
+);
+is_deeply($opt, { 
+  x => {
+    one => 'First',
+    two => 'Second',
+  }
+}, "spurious content keys not eliminated after folding");
+
+
 # Check that mixed content parses in the weird way we expect
 
 $xml = q(<p class="mixed">Text with a <b>bold</b> word</p>);
 
-is_deeply(XMLin($xml), {
+is_deeply(XMLin($xml, @cont_key), {
   'class'   => 'mixed',
   'content' => [ 'Text with a ', ' word' ],
   'b'       => 'bold'
@@ -584,7 +626,7 @@ is_deeply($opt, {
 
 # Unless 'forcearray' option is specified
 
-$opt = XMLin($string, forcearray => 1);
+$opt = XMLin($string, forcearray => 1, @cont_key);
 is_deeply($opt, {
   name => [ 'value' ]
 }, 'except when forcearray is enabled');
@@ -596,7 +638,7 @@ $string = q(<opt>
   <inner name="one" value="1" />
 </opt>);
 
-$opt = XMLin($string, forcearray => 1);
+$opt = XMLin($string, forcearray => 1, @cont_key);
 is_deeply($opt, {
   'inner' => { 'one' => { 'value' => 1 } }
 }, 'array folding works with single nested hash');
@@ -604,7 +646,7 @@ is_deeply($opt, {
 
 # But not without forcearray option specified
 
-$opt = XMLin($string, forcearray => 0);
+$opt = XMLin($string, forcearray => 0, @cont_key);
 is_deeply($opt, {
   'inner' => { 'name' => 'one', 'value' => 1 } 
 }, 'but not if forcearray is turned off');
@@ -621,7 +663,7 @@ $xml = q(<opt zero="0">
 </opt>
 );
 
-$opt = XMLin($xml, forcearray => [ 'two' ]);
+$opt = XMLin($xml, forcearray => [ 'two' ], @cont_key);
 is_deeply($opt, {
   'zero' => '0',
   'one' => 'i',
@@ -637,7 +679,7 @@ $xml = q(<opt name="user" password="foobar">
 </opt>
 );
 
-$opt = XMLin($xml, noattr => 1);
+$opt = XMLin($xml, noattr => 1, @cont_key);
 is_deeply($opt, { nest => 'text' }, 'attributes successfully skipped');
 
 
@@ -651,7 +693,7 @@ $xml = q{<opt>
 };
 
 
-$opt = XMLin($xml, noattr => 1);
+$opt = XMLin($xml, noattr => 1, @cont_key);
 is_deeply($opt, {
  'item' => {
     'a' => { 'value' => 'alpha' },
@@ -671,7 +713,7 @@ $xml = q(<body>
   </outer>
 </body>);
 
-$opt = XMLin($xml, noattr => 1);
+$opt = XMLin($xml, noattr => 1, @cont_key);
 is_deeply($opt, {
   'name' => 'bob',
   'outer' => {
@@ -683,13 +725,13 @@ is_deeply($opt, {
 
 # Unless 'suppressempty' is enabled
 
-$opt = XMLin($xml, noattr => 1, suppressempty => 1);
+$opt = XMLin($xml, noattr => 1, suppressempty => 1, @cont_key);
 is_deeply($opt, { 'name' => 'bob', }, 'or are suppressed');
 
 
 # Check behaviour when 'suppressempty' is set to to undef;
 
-$opt = XMLin($xml, noattr => 1, suppressempty => undef);
+$opt = XMLin($xml, noattr => 1, suppressempty => undef, @cont_key);
 is_deeply($opt, {
   'name' => 'bob',
   'outer' => {
@@ -700,7 +742,7 @@ is_deeply($opt, {
 
 # Check behaviour when 'suppressempty' is set to to empty string;
 
-$opt = XMLin($xml, noattr => 1, suppressempty => '');
+$opt = XMLin($xml, noattr => 1, suppressempty => '', @cont_key);
 is_deeply($opt, {
   'name' => 'bob',
   'outer' => {
@@ -718,8 +760,272 @@ $xml = q(<body>
   </outer>
 </body>);
 
-$opt = XMLin($xml, noattr => 1, suppressempty => 1);
+$opt = XMLin($xml, noattr => 1, suppressempty => 1, @cont_key);
 is($opt, undef, 'empty document parses to undef');
+
+
+# Confirm nothing magical happens with grouped elements
+
+$xml = q(<opt>
+  <prefix>before</prefix>
+  <dirs>
+    <dir>/usr/bin</dir>
+    <dir>/usr/local/bin</dir>
+  </dirs>
+  <suffix>after</suffix>
+</opt>);
+
+$opt = XMLin($xml);
+is_deeply($opt, {
+  prefix => 'before',
+  dirs   => {
+              dir => [ '/usr/bin', '/usr/local/bin' ]
+            },
+  suffix => 'after',
+}, 'grouped tags parse normally');
+
+
+# unless we specify how the grouping works
+
+$xml = q(<opt>
+  <prefix>before</prefix>
+  <dirs>
+    <dir>/usr/bin</dir>
+    <dir>/usr/local/bin</dir>
+  </dirs>
+  <suffix>after</suffix>
+</opt>);
+
+$opt = XMLin($xml, grouptags => {dirs => 'dir'} );
+is_deeply($opt, {
+  prefix => 'before',
+  dirs   => [ '/usr/bin', '/usr/local/bin' ],
+  suffix => 'after',
+}, 'disintermediation of grouped tags works');
+
+
+# try again with multiple groupings
+
+$xml = q(<opt>
+  <prefix>before</prefix>
+  <dirs>
+    <dir>/usr/bin</dir>
+    <dir>/usr/local/bin</dir>
+  </dirs>
+  <infix>between</infix>
+  <terms>
+    <term>vt100</term>
+    <term>xterm</term>
+  </terms>
+  <suffix>after</suffix>
+</opt>);
+
+$opt = XMLin($xml, grouptags => {dirs => 'dir', terms => 'term'} );
+is_deeply($opt, {
+  prefix => 'before',
+  dirs   => [ '/usr/bin', '/usr/local/bin' ],
+  infix  => 'between',
+  terms  => [ 'vt100', 'xterm' ],
+  suffix => 'after',
+}, 'disintermediation works with multiple groups');
+
+
+# confirm folding and ungrouping work together
+
+$xml = q(<opt>
+  <prefix>before</prefix>
+  <dirs>
+    <dir name="first">/usr/bin</dir>
+    <dir name="second">/usr/local/bin</dir>
+  </dirs>
+  <suffix>after</suffix>
+</opt>);
+
+$opt = XMLin($xml, keyattr => {dir => 'name'}, grouptags => {dirs => 'dir'} );
+is_deeply($opt, {
+  prefix => 'before',
+  dirs   => {
+              first  => { content => '/usr/bin' }, 
+              second => { content => '/usr/local/bin' }, 
+            },
+  suffix => 'after',
+}, 'folding and ungrouping work together');
+
+
+# confirm folding, ungrouping and content stripping work together
+
+$xml = q(<opt>
+  <prefix>before</prefix>
+  <dirs>
+    <dir name="first">/usr/bin</dir>
+    <dir name="second">/usr/local/bin</dir>
+  </dirs>
+  <suffix>after</suffix>
+</opt>);
+
+$opt = XMLin($xml,
+  contentkey => '-text', 
+  keyattr    => {dir => 'name'}, 
+  grouptags  => {dirs => 'dir'} 
+);
+is_deeply($opt, {
+  prefix => 'before',
+  dirs   => {
+              first  => '/usr/bin', 
+              second => '/usr/local/bin', 
+            },
+  suffix => 'after',
+}, 'folding, ungrouping and content stripping work together');
+
+
+# confirm folding fails as expected even with ungrouping but (no forcearray)
+
+$xml = q(<opt>
+  <prefix>before</prefix>
+  <dirs>
+    <dir name="first">/usr/bin</dir>
+  </dirs>
+  <suffix>after</suffix>
+</opt>);
+
+$opt = XMLin($xml,
+  contentkey => '-text', 
+  keyattr    => {dir => 'name'}, 
+  grouptags  => {dirs => 'dir'} 
+);
+is_deeply($opt, {
+  prefix => 'before',
+  dirs   => { name => 'first', text => '/usr/bin'}, 
+  suffix => 'after',
+}, 'folding without forcearray but with ungrouping fails as expected');
+
+
+# but works with forcearray enabled
+
+$xml = q(<opt>
+  <prefix>before</prefix>
+  <dirs>
+    <dir name="first">/usr/bin</dir>
+  </dirs>
+  <suffix>after</suffix>
+</opt>);
+
+$opt = XMLin($xml,
+  contentkey => '-text', 
+  forcearray => [ 'dir' ],
+  keyattr    => {dir => 'name'}, 
+  grouptags  => {dirs => 'dir'} 
+);
+is_deeply($opt, {
+  prefix => 'before',
+  dirs   => {'first' => '/usr/bin'}, 
+  suffix => 'after',
+}, 'folding with forcearray and ungrouping works');
+
+
+# Test variable expansion - when no variables are defined
+
+$xml = q(<opt>
+  <file name="config_file">${conf_dir}/appname.conf</file>
+  <file name="log_file">${log_dir}/appname.log</file>
+  <file name="debug_file">${log_dir}/appname.dbg</file>
+</opt>);
+
+$opt = XMLin($xml, contentkey => '-content');
+is_deeply($opt, {
+  file => {
+    config_file => '${conf_dir}/appname.conf',
+    log_file    => '${log_dir}/appname.log',
+    debug_file  => '${log_dir}/appname.dbg',
+  }
+}, 'undefined variables are left untouched');
+
+
+# try again but with variables defined in advance
+
+$opt = XMLin($xml,
+  contentkey => '-content',
+  variables  => { conf_dir => '/etc', log_dir => '/var/log' }
+);
+is_deeply($opt, {
+  file => {
+    config_file => '/etc/appname.conf',
+    log_file    => '/var/log/appname.log',
+    debug_file  => '/var/log/appname.dbg',
+  }
+}, 'substitution of pre-defined variables works');
+
+
+# now try defining them in the XML
+
+$xml = q(<opt>
+  <dir xsvar="conf_dir">/etc</dir>
+  <dir xsvar="log_dir">/var/log</dir>
+  <file name="config_file">${conf_dir}/appname.conf</file>
+  <file name="log_file">${log_dir}/appname.log</file>
+  <file name="debug_file">${log_dir}/appname.dbg</file>
+</opt>);
+
+$opt = XMLin($xml, contentkey => '-content', varattr => 'xsvar');
+is_deeply($opt, {
+  file => {
+    config_file => '/etc/appname.conf',
+    log_file    => '/var/log/appname.log',
+    debug_file  => '/var/log/appname.dbg',
+  },
+  dir           => [
+                     { xsvar => 'conf_dir', content => '/etc'     },
+                     { xsvar => 'log_dir',  content => '/var/log' },
+                   ]
+}, 'variables defined in XML work');
+
+
+# confirm that variables in XML are merged with pre-defined ones
+
+$xml = q(<opt>
+  <dir xsvar="log_dir">/var/log</dir>
+  <file name="config_file">${conf_dir}/appname.conf</file>
+  <file name="log_file">${log_dir}/appname.log</file>
+  <file name="debug_file">${log_dir}/appname.dbg</file>
+</opt>);
+
+$opt = XMLin($xml,
+  contentkey => '-content', 
+  varattr    => 'xsvar',
+  variables  => { conf_dir => '/etc', log_dir => '/tmp' }
+);
+is_deeply($opt, {
+  file => {
+    config_file => '/etc/appname.conf',
+    log_file    => '/var/log/appname.log',
+    debug_file  => '/var/log/appname.dbg',
+  },
+  dir           => { xsvar => 'log_dir',  content => '/var/log' },
+}, 'variables defined in XML merged successfully with predefined vars');
+
+
+# confirm that a variables are expanded in variable definitions
+
+$xml = q(<opt>
+  <dirs>
+    <dir name="prefix">/usr/local/apache</dir>
+    <dir name="exec_prefix">${prefix}</dir>
+    <dir name="bin_dir">${exec_prefix}/bin</dir>
+  </dirs>
+</opt>);
+
+$opt = XMLin($xml,
+  contentkey => '-content',
+  varattr    => 'name',
+  grouptags  => { dirs => 'dir' },
+);
+is_deeply($opt, {
+  dirs => {
+    prefix      => '/usr/local/apache',
+    exec_prefix => '/usr/local/apache',
+    bin_dir     => '/usr/local/apache/bin',
+  }
+}, 'variables are expanded in later variable definitions');
 
 
 # Test option error handling
@@ -736,9 +1042,59 @@ like($@, qr/Options must be name=>value pairs \(odd number supplied\)/,
 'with correct error message');
 
 
+# Test the NormaliseSpace option
+
+$xml = q(<opt>
+  <user name="  Joe
+  Bloggs  " id="  one  two "/>
+  <user>
+    <name>  Jane
+    Doe </name>
+    <id>
+    three
+    four
+    </id>
+  </user>
+</opt>);
+
+$opt = XMLin($xml, KeyAttr => [ 'name' ], NormaliseSpace => 1);
+ok(ref($opt->{user}) eq 'HASH', "NS-1: folding OK");
+ok(exists($opt->{user}->{'Joe Bloggs'}), "NS-2: space normalised in hash key");
+ok(exists($opt->{user}->{'Jane Doe'}), "NS-3: space normalised in hash key");
+like($opt->{user}->{'Jane Doe'}->{id}, qr{^\s\s+three\s\s+four\s\s+$}s,
+  "NS-4: space not normalised in hash value");
+
+$opt = XMLin($xml, KeyAttr => [ 'name' ], NormaliseSpace => 2);
+ok(ref($opt->{user}) eq 'HASH', "NS-5: folding OK");
+ok(exists($opt->{user}->{'Joe Bloggs'}), "NS-6: space normalised in hash key");
+like($opt->{user}->{'Joe Bloggs'}->{id}, qr{^one\stwo$}s,
+  "NS-7: space normalised in attribute value");
+ok(exists($opt->{user}->{'Jane Doe'}), "NS-8: space normalised in hash key");
+like($opt->{user}->{'Jane Doe'}->{id}, qr{^three\sfour$}s,
+  "NS-9: space normalised in element text content");
+
+# confirm NormaliseSpace works in anonymous arrays too
+
+$xml = q(<opt>
+  <anon>  one  two </anon><anon> three
+  four  five </anon><anon> six </anon><anon> seveneightnine </anon>
+</opt>);
+
+$opt = XMLin($xml, NormaliseSpace => 2);
+is_deeply($opt, [   'one two', 'three four five', 'six', 'seveneightnine' ],
+  "NS-10: space normalised in anonymous array");
+
+# Check that American speeling works too
+
+$opt = XMLin($xml, NormalizeSpace => 2);
+is_deeply($opt, [   'one two', 'three four five', 'six', 'seveneightnine' ],
+  "NS-11: space normalized in anonymous array");
+
 # Now for a 'real world' test, try slurping in an SRT config file
 
-$opt = XMLin(File::Spec->catfile('t', 'srt.xml'), forcearray => 1);
+$opt = XMLin(File::Spec->catfile('t', 'srt.xml'),
+  forcearray => 1, @cont_key
+);
 $target = {
   'global' => [
     {

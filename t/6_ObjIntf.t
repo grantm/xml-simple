@@ -2,7 +2,7 @@
 # vim: syntax=perl
 
 use strict;
-use Test::More tests => 27;
+use Test::More tests => 33;
 
 ##############################################################################
 # Derived version of XML::Simple that returns everything in upper case
@@ -101,10 +101,19 @@ my %opts2 = (
   keyattr => { }
 );
 
+my %opts3 = (
+  keyattr => { disc => 'cddbid', track => 'number' },
+  keeproot => 1, 
+  contentkey => '-title',
+  forcearray => [ qw(disc album) ] 
+);
+
 my $xs1 = new XML::Simple( %opts1 );
 my $xs2 = new XML::Simple( %opts2 );
+my $xs3 = new XML::Simple( %opts3 );
 isa_ok($xs1, 'XML::Simple', 'object one');
 isa_ok($xs2, 'XML::Simple', 'object two');
+isa_ok($xs3, 'XML::Simple', 'object three');
 is_deeply(\%opts1, {
   keyattr => { disc => 'cddbid', track => 'number' },
   keeproot => 1, 
@@ -169,6 +178,38 @@ my $exp2 = {
 
 my $ref2 = $xs2->XMLin($xml);
 is_deeply($ref2, $exp2, 'parsed expected data via object 2');
+
+
+# Try using the third object
+
+my $exp3 = {
+  'cddatabase' => {
+    'disc' => {
+      '960b750c' => {
+        'id' => '9362-45055-2',
+        'album' => [ 'Automatic For The People' ],
+        'artist' => 'R.E.M.',
+        'track' => {
+          1  => 'Drive',
+          2  => 'Try Not To Breathe',
+          3  => 'The Sidewinder Sleeps Tonite',
+          4  => 'Everybody Hurts',
+          5  => 'New Orleans Instrumental No. 1',
+          6  => 'Sweetness Follows',
+          7  => 'Monty Got A Raw Deal',
+          8  => 'Ignoreland',
+          9  => 'Star Me Kitten',
+          10 => 'Man On The Moon',
+          11 => 'Nightswimming',
+          12 => 'Find The River'
+        }
+      }
+    }
+  }
+};
+
+my $ref3 = $xs3->XMLin($xml);
+is_deeply($ref3, $exp3, 'parsed expected data via object 3');
 
 
 # Confirm default options in object merge correctly with options as args
@@ -266,3 +307,53 @@ $_ = $xsp->XMLout($ref);
 like($_, qr{<opt>\s*
  <server\s+address="<!\[CDATA\[12->14\s+"Puf&Stuf"\s+Drive\]\]>"\s*/>\s*
 </opt>}xs, 'inheritance works with escape_value() overridden');
+
+
+# Check variables defined in the constructor don't get trounced for
+# subsequent parses
+
+$xs1 = XML::Simple->new(
+  contentkey => '-content', 
+  varattr    => 'xsvar',
+  variables  => { conf_dir => '/etc', log_dir => '/tmp' }
+);
+
+$xml = q(<opt>
+  <dir xsvar="log_dir">/var/log</dir>
+  <file name="config_file">${conf_dir}/appname.conf</file>
+  <file name="log_file">${log_dir}/appname.log</file>
+  <file name="debug_file">${log_dir}/appname.dbg</file>
+</opt>);
+
+my $opt = $xs1->XMLin($xml);
+is_deeply($opt, {
+  file => {
+    config_file => '/etc/appname.conf',
+    log_file    => '/var/log/appname.log',
+    debug_file  => '/var/log/appname.dbg',
+  },
+  dir           => { xsvar => 'log_dir',  content => '/var/log' },
+}, 'variables from XML merged with predefined variables');
+
+$xml = q(<opt>
+  <file name="config_file">${conf_dir}/appname.conf</file>
+  <file name="log_file">${log_dir}/appname.log</file>
+  <file name="debug_file">${log_dir}/appname.dbg</file>
+</opt>);
+
+my $opt = $xs1->XMLin($xml);
+is_deeply($opt, {
+  file => {
+    config_file => '/etc/appname.conf',
+    log_file    => '/tmp/appname.log',
+    debug_file  => '/tmp/appname.dbg',
+  },
+}, 'variables from XML merged with predefined variables');
+
+# check that unknown options passed to the constructor are rejected
+
+$@ = undef;
+eval { $xs1 = XML::Simple->new(KeyAttr => {}, WibbleFlibble => 1) };
+ok(defined($@), "unrecognised option caught by constructor");
+like($@, qr/^Unrecognised option: WibbleFlibble at/,
+  "correct message in exception");

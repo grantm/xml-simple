@@ -36,7 +36,7 @@ if($t1 < $t0  or  $t2 < $t1) {
 }
 
 
-plan tests => 20;
+plan tests => 21;
 
 ##############################################################################
 #                   S U P P O R T   R O U T I N E S
@@ -175,6 +175,11 @@ ok(CopyFile($SrcFile, $XMLFile), 'copied back the original file');
 PassTime($t1);
 $opt = XMLin($XMLFile, cache => 'storable');
 is_deeply($opt, $Expected, 'parsed expected data in through cache');
+
+# Make sure scheme name is case-insensitive
+
+$opt = XMLin($XMLFile, cache => 'Storable');
+is_deeply($opt, $Expected, 'scheme name is case-insensitive');
 
 # Clean up and go
 
