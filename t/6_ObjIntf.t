@@ -1,7 +1,7 @@
 use strict;
 
 ##############################################################################
-# Derived version of XML::Simple that returns everything in lower case
+# Derived version of XML::Simple that returns everything in upper case
 ##############################################################################
 
 package XML::Simple::UC;
