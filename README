@@ -1,0 +1,53 @@
+DESCRIPTION
+
+  XML::Simple - Easy API to read/write XML (esp config files)
+
+
+PREREQUISITES
+
+  XML::Simple requires XML::Parser (if you're running ActivePerl, you'll
+  already have this installed).
+
+  The optional caching features of XML::Simple also require Storable.pm.
+
+
+BUILDING/INSTALLING
+
+  Once the archive is unpacked, use these commands:
+
+      perl Makefile.PL
+      make
+      make test
+      make install
+
+  If for some reason, you can't run these commands, you can simple copy 
+  the Simple.pm file to your lib/XML directory (where Parser.pm lives).
+
+  If you want to test the module, but don't have 'make', try:
+
+      perl maketest
+
+
+STATUS
+
+  This version (1.06) is the current stable release.  This version is
+  believed to be thread-safe.
+
+  Please send any feedback to the author: grantm@cpan.org
+
+
+NEW IN THIS RELEASE
+
+  - minor change to fix version number in default xmldecl (from '1' to '1.0')
+  - updated contact email address for author
+
+  See 'Changes' for a detailed history.
+
+
+COPYRIGHT
+
+  Copyright 1999-2001 Grant McLean <grantm@cpan.org>
+
+  This library is free software; you can redistribute it
+  and/or modify it under the same terms as Perl itself.
+

@@ -1,0 +1,109 @@
+Revision history for Perl module XML::Simple
+
+1.06  Nov 19 2001
+	- fixed version number in default xmldecl (thanks to Matt Sergeant for
+	  bug report and patch)
+	- updated contact email address for author
+
+
+1.05  Aug 31 2000
+	- code re-org to make internals all OO for easier extending
+	- added 'noattr' option to tell XMLout() not to use attributes (only
+	  nested elements) and XMLin() to discard attributes
+	- added 'suppressempty' option to tell XMLin what to do with elements
+	  with no attributes and no content
+	- added 'parseropts' option for specifying options which should be
+	  passed to the underlying XML::Parser object
+	- added 'forcecontent' option to force text content to parse to a
+	  hash value even if the element has no attributes
+	- fix for forcearray getting applied to text content
+	- integrated patch from Paul Lindner to work around filenames sometimes
+	  being seen as XML when running under mod_perl
+	- integrated patch from Edward Avis: filename '-' means stdin
+	- fixed bug where a missing key attribute could cause a crash
+	- added a warning message for above situation
+	- added 'support' for CDATA sections - they always worked, but now
+	  they're in the test suite which should ensure they keep working
+	- fixed error message when caching enabled but parsing from filehandle
+	- fixed empty elements being skipped by XMLout() when folding enabled
+	- fixed text content of '0' being skipped by XMLout()
+
+1.04  Apr 03 2000
+	- fix for text content being skipped by XMLout
+	- added (optional) OO interface for changing default options
+	- added 'keeproot' option (requested by Mark D. Anderson - MDA)
+	- added 'contentkey' option (also requested by MDA)
+	- incorporated 'forcearray' as arrayref patch from Andrew McNaughton
+
+1.03  Mar 05 2000
+	- added 'maketest' script for make impaired platforms
+	- yet more cross platform robustness added to test scripts incl
+	  workaround for Win32 problem where writing to file changed contents
+	  but not timestamp(!)
+	- backed out one overzealous use of File::Spec in test script
+	- POD updates including XML::Twig description contributed by Michel
+	  Rodriguez
+
+1.02b Feb 16 2000 - limited distribution beta
+	- reinstated locking with new backwards compatibility code
+	- fixed platform dependant pathname handling to use File::Basename &
+	  File::Spec in XML::Simple.pm and test scripts
+	- fixed bug causing XMLout() to incorrectly barf on what it thought was
+	  a recursive data structure
+	- removed spurious checking code which stopped XMLout unfolding a
+	  single nested hash
+	- fixed t/4_MemShare.t to gracefully cope with the absense of utime()
+	- changed t/3_Storable.t and t/5_MemCopy.t to skip gracefully if no
+	  Storable.pm
+	- removed superflous eval blocks around requires
+
+1.01  Dec  1 1999
+	- removed faulty locking code pending a fix
+
+1.00  Nov 25 1999
+	- added escaping feature + noescape option
+	- added xmldecl option
+	- further tidy ups for thread safing
+	- more POD revisions (incl: pointers to other modules)
+
+0.95  Nov  2 1999
+	- added rootname option
+	- added outputfile option
+	- lots of internal tidy ups for thread safing
+	- fixed bug in check for XML string to XMLin()
+	- extra tests (esp option handling)
+
+0.90  Oct 14 1999 (first beta release)
+	- module renamed to XML::Simple ready for CPAN upload
+	- XMLToOpt() renamed to XMLin()
+	- OptToXML() renamed to XMLout()
+	- added 'convert' script
+
+0.05  Sep 18 1999
+	- fixed location of XML.pm in distribution (make install didn't work)
+	- added tests for MemCopy
+	- fixed ABSTRACT_FROM in Makefile.PL
+	- fixed PREREQ_PM in Makefile.PL
+
+0.04  Aug 10 1999
+	- added caching using Storable.pm
+        - updated MANIFEST to include missing test files
+
+0.03  Jun 20 1999
+        - rewrite of OptToXML
+	- anonymous array support
+	- more and better test routines
+	- POD updates
+
+0.02  Jun 10 1999
+	- added support for OptToXML
+	- fixed searchpath inconsistencies
+	- added 'forcearray' option
+	- POD improvements
+	- much improved test routines
+
+0.01  May 27 1999
+	- original version; created by h2xs 1.18
+	- module called 'Getopt::XML'
+	- included basic XMLToOpt routine
+
