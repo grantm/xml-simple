@@ -6,6 +6,8 @@ use Test::More;
 use IO::File;
 use File::Spec;
 
+$^W = 1;
+
 
 # Initialise filenames and check they're there
 
@@ -15,14 +17,16 @@ unless(-e $XMLFile) {
   plan skip_all => 'Test data missing';
 }
 
-plan tests => 95;
+plan tests => 98;
 
+
+my $last_warning = '';
 
 $@ = '';
 eval "use XML::Simple;";
 is($@, '', 'Module compiled OK');
-unless($XML::Simple::VERSION eq '2.05') {
-  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.05)");
+unless($XML::Simple::VERSION eq '2.06') {
+  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.06)");
 }
 
 
@@ -352,11 +356,23 @@ $target = {
   ]
 };
 
+$last_warning = '';
 $opt = XMLin($xml, @cont_key);
 is_deeply($opt, $target, "did not fold on default key with non-scalar value");
+is($last_warning, '', 'no warning issued');
 
-$opt = XMLin($xml, keyattr => { item => 'name' }, @cont_key);
-is_deeply($opt, $target, "did not fold on specific key with non-scalar value");
+{
+  local($SIG{__WARN__}) = \&warn_handler;
+
+  $last_warning = '';
+  $opt = XMLin($xml, keyattr => { item => 'name' }, @cont_key);
+  is_deeply($opt, $target, "did not fold on specific key with non-scalar value");
+  isnt($last_warning, '', 'warning issued as expected');
+  like($last_warning, 
+    qr{<item> element has non-scalar 'name' key attribute},
+    'text in warning is correct'
+  );
+}
 
 
 # Make sure that the root element name is preserved if we ask for it
@@ -1218,3 +1234,7 @@ is_deeply($target, $opt, 'successfully read an SRT config file');
 
 exit(0);
 
+
+sub warn_handler {
+  $last_warning = $_[0];
+}

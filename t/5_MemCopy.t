@@ -5,6 +5,9 @@ use strict;
 use Test::More;
 use File::Spec;
 
+$^W = 1;
+
+
 eval { require Storable; };
 unless($INC{'Storable.pm'}) {
   plan skip_all => 'no Storable.pm';

@@ -5,6 +5,9 @@ use strict;
 use Test::More;
 use File::Spec;
 
+$^W = 1;
+
+
 # Initialise filenames and check they're there
 
 my $SrcFile   = File::Spec->catfile('t', 'desertnet.src');

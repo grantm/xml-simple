@@ -6,6 +6,9 @@ use Test::More;
 use File::Spec;
 use IO::File;
 
+$^W = 1;
+
+
 eval { require XML::SAX; };
 if($@) {
   plan skip_all => 'no XML::SAX';

@@ -4,7 +4,9 @@
 use strict;
 use Test::More;
 
-plan tests => 37;
+$^W = 1;
+
+plan tests => 38;
 
 
 ##############################################################################
@@ -140,6 +142,7 @@ like($xml, qr{
 
 # Confirm that keyattr cannot be omitted
 
+$@ = '';
 eval {
   XMLout($ref, rootname => 'list');
 };
@@ -147,6 +150,16 @@ eval {
 isnt($@, '', 'omitting keyattr was a fatal error');
 like($@, qr/(?i)No value specified for 'keyattr'/,
   'with the correct error message');
+
+
+# Confirm that forcearray can be omitted (only rqd on input)
+
+$@ = '';
+eval {
+  XMLout($ref, keyattr => {x => 'y'});
+};
+
+is($@, '', 'omitting forcearray was not a fatal error on output');
 
 
 ##############################################################################
@@ -160,12 +173,12 @@ $xml = q(<opt name1="value1" name2="value2"></opt>);
 my $xs = XML::Simple->new(forcearray => 1, keyattr => {});
 
 $@ = '';
-my $opt = eval {
+$opt = eval {
   $xs->XMLin($xml);
 };
 is($@, '', '$xs->XMLin() did not fail');
 
-my $keys = join(' ', sort keys %$opt);
+$keys = join(' ', sort keys %$opt);
 
 is($keys, 'name1 name2', 'and managed to produce the expected results');
 

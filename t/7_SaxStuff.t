@@ -6,6 +6,9 @@ use Test::More;
 use File::Spec;
 use IO::File;
 
+$^W = 1;
+
+
 BEGIN {
   unshift @INC, File::Spec->catfile('t', 'lib');
 
