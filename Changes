@@ -1,6 +1,15 @@
 Revision history for Perl module XML::Simple
 
-2.04  Mar 10 2004
+2.05  Apr 16 2003
+      - fixed warnings when NormaliseSpace undefined (reported by Peter
+        Scott and others)
+      - added support for specifying ForceArray using regular expressions
+        (patch from Jim Cromie)
+      - added check to escape_value to guard against undefined argument
+        (reported by Henrik Gemal)
+      - added NoIndent option (requested by Afroze Husain Zubairi)
+
+2.04  Apr 10 2003
       - integrated a patch from Michel Rodriguez
         + new facility for removing extra levels of indirection (using
           the new 'GroupTags' option)

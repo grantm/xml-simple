@@ -56,12 +56,22 @@ BUILDING/INSTALLING
 
 STATUS
 
-  This version (2.04) is the current stable release.
+  This version (2.05) is the current stable release.
 
   Please send any feedback to the author: grantm@cpan.org
 
 
 NEW IN THIS RELEASE
+  - fixed warnings when NormaliseSpace undefined (reported by Peter
+    Scott and others)
+  - added support for specifying ForceArray using regular expressions
+    (patch from Jim Cromie)
+  - added check to escape_value to guard against undefined argument
+    (reported by Henrik Gemal)
+  - added NoIndent option (requested by Afroze Husain Zubairi)
+
+
+  New in Version 2.04
   - new 'GroupTags' option (patch from Michel Rodriguez)
   - optionally collapse 'content' hashes to scalars after folding
     (also from Michel)
