@@ -56,16 +56,26 @@ BUILDING/INSTALLING
 
 STATUS
 
-  This version (2.03) is the current stable release.
+  This version (2.04) is the current stable release.
 
   Please send any feedback to the author: grantm@cpan.org
 
 
 NEW IN THIS RELEASE
+  - new 'GroupTags' option (patch from Michel Rodriguez)
+  - optionally collapse 'content' hashes to scalars after folding
+    (also from Michel)
+  - new variable substitution facility via 'Variables' and 'VarAttr'
+    options (Michel again)
+  - new 'NormaliseSpace' option (suggested by Alex Manoussakis)
+  - option names are no longer case-sensitive and can include '_'
+  - XMLin() and XMLout() aliased to xml_in() and xml_out()
+
+  New in Version 2.03
   - fixed circular reference check which was incorrectly catching
     'parallel' references (patch from Theo Lengyel)
 
-  New in Version 2.03:
+  New in Version 2.02:
   - changed Storable calls to use locking
 
   New in Version 2.01:
