@@ -894,7 +894,7 @@ sub collapse {
 
   if(my $var = $self->{_var_values}) {
     while(my($key, $val) = each(%$attr)) {
-      $val =~ s{\$\{(\w+)\}}{ $self->get_var($1) }ge;
+      $val =~ s{\$\{([\w.]+)\}}{ $self->get_var($1) }ge;
       $attr->{$key} = $val;
     }
   }
@@ -2540,6 +2540,8 @@ A 'variable' is any text of the form C<${name}> which occurs in an attribute
 value or in the text content of an element.  If 'name' matches a key in the
 supplied hashref, C<${name}> will be replaced with the corresponding value from
 the hashref.  If no matching key is found, the variable will not be replaced.
+Names must match the regex: C<[\w.]+> (ie: only 'word' characters and dots are
+allowed).
 
 =head2 VarAttr => 'attr_name' I<# in - handy>
 

@@ -1088,10 +1088,14 @@ $xml = q(<opt>
   <dir xsvar="conf_dir">/etc</dir>
   <dir xsvar="log_dir">/var/log</dir>
   <cfg xsvar="have_docs">false</cfg>
+  <cfg xsvar="host.domain">search.perl.org</cfg>
+  <cfg xsvar="bad/name">bogus</cfg>
   <file name="config_file">${conf_dir}/appname.conf</file>
   <file name="log_file">${log_dir}/appname.log</file>
   <file name="debug_file">${log_dir}/appname.dbg</file>
+  <file name="bogus_file">${bad/name}</file>
   <opt docs="${have_docs}" />
+  <site url="http://${host.domain}/" />
 </opt>);
 
 $opt = XMLin($xml, contentkey => '-content', varattr => 'xsvar');
@@ -1100,13 +1104,19 @@ is_deeply($opt, {
     config_file => '/etc/appname.conf',
     log_file    => '/var/log/appname.log',
     debug_file  => '/var/log/appname.dbg',
+    bogus_file  => '${bad/name}',            # '/' is not valid in a var name
   },
-  opt => { docs => 'false' },
+  opt           => { docs => 'false' },
+  site          => { url => 'http://search.perl.org/' },
   dir           => [
                      { xsvar => 'conf_dir', content => '/etc'     },
                      { xsvar => 'log_dir',  content => '/var/log' },
                    ],
-  cfg           => { xsvar => 'have_docs',  content => 'false'    },
+  cfg           => [
+                     { xsvar => 'have_docs',   content => 'false'  },
+                     { xsvar => 'host.domain', content => 'search.perl.org' },
+                     { xsvar => 'bad/name',    content => 'bogus'  },
+                   ],
 }, 'variables defined in XML work');
 
 

@@ -1,5 +1,8 @@
 Revision history for Perl module XML::Simple
 
+2.15  ??? ?? 2006
+      - allow '.' characters in variable names (suggested by Cosimo Streppone)
+
 2.14  Jan 29 2005
       - unlink and lock fixes for VMS (patch from Peter (Stig) Edwards)
 
