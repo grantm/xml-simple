@@ -218,8 +218,8 @@ sub XMLin {
 
   # Parsing is required, so let's get on with it
 
-  my $tree =  $self->build_tree($filename, $string);
-
+  my $tree =  $self->build_tree($filename, ref($string) ? $string : \$string);
+  undef($string);
 
   # Now work some magic on the resulting parse tree
 
@@ -240,20 +240,21 @@ sub XMLin {
 
 
 ##############################################################################
-# Method: build_tree()
+#Method: build_tree()
 #
 # This routine will be called if there is no suitable pre-parsed tree in a
 # cache.  It parses the XML and returns an XML::Parser 'Tree' style data
 # structure (summarised in the comments for the collapse() routine below).
 #
-# XML::Simple requires the services of another module that knows how to
-# parse XML.  If XML::SAX is installed, the default SAX parser will be used,
+# XML::Simple requires the services of another module that knows how to parse
+# XML.  If XML::SAX is installed, the default SAX parser will be used,
 # otherwise XML::Parser will be used.
 #
 # This routine expects to be passed a 'string' as argument 1 or a filename as
-# argument 2.  The 'string' might be a string of XML or it might be a 
-# reference to an IO::Handle.  (This non-intuitive mess results in part from
-# the way XML::Parser works but that's really no excuse).
+# argument 2.  The 'string' might be a string of XML (passed by reference to
+# save memory) or it might be a reference to an IO::Handle.  (This
+# non-intuitive mess results in part from the way XML::Parser works but that's
+# really no excuse).
 #
 
 sub build_tree {
@@ -288,11 +289,11 @@ sub build_tree {
     $tree = $sp->parse_uri($filename);
   }
   else {
-    if(ref($string)) {
+    if(ref($string) && ref($string) ne 'SCALAR') {
       $tree = $sp->parse_file($string);
     }
     else {
-      $tree = $sp->parse_string($string);
+      $tree = $sp->parse_string($$string);
     }
   }
 
@@ -336,7 +337,7 @@ sub build_tree_xml_parser {
     close(XML_FILE);
   }
   else {
-    $tree = $xp->parse($string);
+    $tree = $xp->parse($$string);
   }
 
   return($tree);
