@@ -1457,6 +1457,7 @@ sub value_to_xml {
 
   elsif(UNIVERSAL::isa($ref, 'ARRAY')) {
     foreach $value (@$ref) {
+      next if !defined($value) and $self->{opt}->{suppressempty};
       if(!ref($value)) {
         push @result,
              $indent, '<', $name, '>',

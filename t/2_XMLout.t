@@ -7,7 +7,7 @@ use IO::File;
 
 $^W = 1;
 
-plan tests => 196;
+plan tests => 198;
 
 
 ##############################################################################
@@ -685,6 +685,34 @@ $ref = { 'one' => 1, 'two' => undef };
 $_ = XMLout($ref, suppressempty => 1, noattr => 1);
 like($_, qr{^\s*<(\w*)\s*>\s*<one\s*>1</one\s*>\s*</\1\s*>\s*$}s,
   'uninitialiased values successfully skipped');
+
+
+# Try undef in an array
+
+$ref = { a => [ 'one', undef, 'three' ] };
+$_ = XMLout($ref);
+like($_, 
+  qr{
+    ^\s*<(\w*)\s*>
+    \s*<a\s*>one</a\s*>
+    \s*<a\s*></a\s*>
+    \s*<a\s*>three</a\s*>
+    \s*</\1\s*>\s*$
+  }xs,
+  'uninitialiased value in array is empty element');
+
+
+# And again with SuppressEmpty enabled
+
+$_ = XMLout($ref, SuppressEmpty => 1);
+like($_, 
+  qr{
+    ^\s*<(\w*)\s*>
+    \s*<a\s*>one</a\s*>
+    \s*<a\s*>three</a\s*>
+    \s*</\1\s*>\s*$
+  }xs,
+  'uninitialiased value in array is skipped');
 
 
 # Test the keeproot option
