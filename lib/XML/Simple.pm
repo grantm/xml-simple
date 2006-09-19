@@ -546,7 +546,12 @@ sub XMLout {
 
   if($self->{opt}->{outputfile}) {
     if(ref($self->{opt}->{outputfile})) {
-      return($self->{opt}->{outputfile}->print($xml));
+      my $fh = $self->{opt}->{outputfile};
+      if(UNIVERSAL::isa($fh, 'GLOB') and !UNIVERSAL::can($fh, 'print')) {
+        eval { require IO::Handle; };
+        croak $@ if $@;
+      }
+      return($fh->print($xml));
     }
     else {
       local(*OUT);
@@ -2444,6 +2449,10 @@ and later for output using an encoding other than UTF-8, eg:
 
   open my $fh, '>:encoding(iso-8859-1)', $path or die "open($path): $!";
   XMLout($ref, OutputFile => $fh);
+
+Note, XML::Simple does not require that the object you pass in to the
+OutputFile option inherits from L<IO::Handle> - it simply assumes the object
+supports a C<print> method.
 
 =head2 ParserOpts => [ XML::Parser Options ] I<# in - don't use this>
 

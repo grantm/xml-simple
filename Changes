@@ -4,6 +4,8 @@ Revision history for Perl module XML::Simple
       - allow '.' characters in variable names (suggested by Cosimo Streppone)
       - fix output of undefs in arrayrefs with SuppressEmpty (reported by
         かんな - Kanna)
+      - tidy up code and docs around lexical filehandle passed to
+        OutputFile (report from Helge Sauer)
 
 2.14  Jan 29 2005
       - unlink and lock fixes for VMS (patch from Peter (Stig) Edwards)

@@ -3,7 +3,6 @@
 
 use strict;
 use Test::More;
-use IO::File;
 
 $^W = 1;
 
@@ -352,10 +351,10 @@ like($_, qr{^
 }xs, 'and encodes as expected');
 
 
-# Try encoding a blessed reference and confirm that it fails
+# Try encoding a non array/hash blessed reference and confirm that it fails
 
-$_ = eval { my $ref = new IO::File; XMLout($ref) };
-ok(!defined($_), 'caught blessed reference in data structure');
+$_ = eval { my $ref = bless \*STDERR, 'BogoClass'; XMLout($ref) };
+is($_, undef, 'caught blessed non array/hash reference in data structure');
 like($@, qr/Can't encode a value of type: /, 'with correct error message');
 
 
@@ -531,8 +530,7 @@ unlink($TestFile);
 
 ok(!-e $TestFile);
 eval {
-  my $fh = new IO::File;
-  $fh->open(">$TestFile") || die "$!";
+  open my $fh, '>', $TestFile or die "$!";
   XMLout($hashref1, outputfile => $fh);
   $fh->close();
 };
