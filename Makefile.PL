@@ -28,6 +28,47 @@ my $make_params = {
 print "Checking installed modules ...\n";
 
 if ( eval { require XML::SAX } && ! $@ ) {
+    my $default_parser = ref(XML::SAX::ParserFactory->parser());
+    if ($default_parser eq 'XML::SAX::PurePerl') {
+      my $version = XML::SAX->VERSION;
+      if($version > 0.12  and  $version < 0.15) {
+        die <<"EOF";
+=============================================================================
+
+  Fatal error: Your default XML parser (XML::SAX::PurePerl) is broken.
+
+  There are known bugs in the PurePerl parser included with version 0.13 
+  and 0.14 of XML::SAX.  The XML::Simple tests will fail with this parser.
+
+  One way to avoid the problem is to install XML::SAX::Expat - it will
+  install itself as the system default XML parser and then you will be able 
+  to install XML::Simple successfully.  XML::SAX::Expat is also much faster
+  than XML::SAX::PurePerl so you probably want it anyway.
+
+=============================================================================
+EOF
+      }
+    }
+    elsif ($default_parser eq 'XML::SAX::RTF') {
+      die <<"EOF";
+=============================================================================
+
+  Fatal error: Your default XML parser (XML::SAX::RTF) is broken.
+
+  The XML::SAX:RTF module is installed as the default XML parser on your
+  system.  This is a bug - although the module does generate SAX events,
+  it does not parse XML and should not register itself as an XML parser.
+
+  One way to avoid the problem is to install XML::SAX::Expat - it will
+  register itself as the system default XML parser and then you will be
+  able to install XML::Simple successfully.
+
+  Another solution would be to locate the XML/SAX/ParserDetails.ini file
+  and edit it to completely remove the section beginning [XML::SAX::RTF].
+
+=============================================================================
+EOF
+    }
     print "XML::SAX is installed, it will be used by the test suite\n";
     $make_params->{PREREQ_PM}->{'XML::SAX'} = 0;
     $make_params->{PREREQ_PM}->{'XML::NamespaceSupport'} = 1.04;
@@ -40,6 +81,8 @@ else {
     print "You don't have either XML::SAX or XML::Parser installed!\n";
     $make_params->{PREREQ_PM}->{'XML::SAX'} = 0;
     $make_params->{PREREQ_PM}->{'XML::NamespaceSupport'} = 1.04;
+    # Hopefully the following line can be removed after next XML::SAX release
+    $make_params->{PREREQ_PM}->{'XML::SAX::Expat'} = 0;
 }
 
 eval { require Storable };
