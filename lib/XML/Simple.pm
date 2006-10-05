@@ -791,8 +791,14 @@ sub handle_options  {
 
   # make sure there's nothing weird in {grouptags}
 
-  if($opt->{grouptags} and !UNIVERSAL::isa($opt->{grouptags}, 'HASH')) {
-    croak "Illegal value for 'GroupTags' option - expected a hashref";
+  if($opt->{grouptags}) {
+    croak "Illegal value for 'GroupTags' option - expected a hashref"
+      unless UNIVERSAL::isa($opt->{grouptags}, 'HASH');
+
+    while(my($key, $val) = each %{$opt->{grouptags}}) {
+      next if $key ne $val;
+      croak "Bad value in GroupTags: '$key' => '$val'";
+    }
   }
 
 

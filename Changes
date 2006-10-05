@@ -1,5 +1,8 @@
 Revision history for Perl module XML::Simple
 
+2.16  ??? ?? 2006
+      - Added test for bad GroupTags option (report from Lee Goddard)
+
 2.15  Oct 03 2006
       - Makefile.PL changes: reject known-bad PurePerl and RTF parser modules;
         default to XML::SAX::Expat if no parser installed
