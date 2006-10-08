@@ -1131,7 +1131,7 @@ sub array_to_hash {
   my $name     = shift;
   my $arrayref = shift;
 
-  my $hashref  = {};
+  my $hashref  = $self->new_hashref;
 
   my($i, $key, $val, $flag);
 
@@ -1199,6 +1199,20 @@ sub array_to_hash {
   }
  
   return($hashref);
+}
+
+
+##############################################################################
+# Method: new_hashref()
+#
+# This is a hook routine for overriding in a sub-class.  Some people believe
+# that using Tie::IxHash here will solve order-loss problems.
+# 
+
+sub new_hashref {
+  my $self = shift;
+
+  return { @_ };
 }
 
 

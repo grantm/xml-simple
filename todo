@@ -1,2 +1,8 @@
-- test cases
-  - iterate parsers (only on author's machine?)
+To Release
+==========
+- fix infinite loop reported by Lee Goddard
+- add new_hashref hook method
+
+To Do
+=====
+- add cache_dir (?) method (rather than option)

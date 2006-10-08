@@ -18,6 +18,7 @@ t/7_SaxStuff.t
 t/8_Namespaces.t
 t/9_Strict.t
 t/A_XMLParser.t
+t/B_Hooks.t
 t/desertnet.src
 t/lib/TagsToUpper.pm
 t/srt.xml
