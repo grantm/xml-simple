@@ -57,11 +57,6 @@ $VERSION           = '2.15';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
-my %CacheScheme    = (
-                       storable => [ \&StorableSave, \&StorableRestore ],
-                       memshare => [ \&MemShareSave, \&MemShareRestore ],
-                       memcopy  => [ \&MemCopySave,  \&MemCopyRestore  ]
-                     );
 
 my @KnownOptIn     = qw(keyattr keeproot forcecontent contentkey noattr
                         searchpath forcearray cache suppressempty parseropts
@@ -197,10 +192,8 @@ sub XMLin {
 
     if($self->{opt}->{cache}) {
       foreach $scheme (@{$self->{opt}->{cache}}) {
-        croak "Unsupported caching scheme: $scheme"
-          unless($CacheScheme{$scheme});
-
-        my $opt = $CacheScheme{$scheme}->[1]->($filename);
+        my $method = 'cache_read_' . $scheme;
+        my $opt = $self->$method($filename);
         return($opt) if($opt);
       }
     }
@@ -232,7 +225,8 @@ sub XMLin {
   }
 
   if($self->{opt}->{cache}) {
-    $CacheScheme{$self->{opt}->{cache}->[0]}->[0]->($ref, $filename);
+    my $method = 'cache_write_' . $self->{opt}->{cache}->[0];
+    $self->$method($ref, $filename);
   }
 
   return($ref);
@@ -345,17 +339,16 @@ sub build_tree_xml_parser {
 
 
 ##############################################################################
-# Sub: StorableSave()
+# Method: cache_write_storable()
 #
 # Wrapper routine for invoking Storable::nstore() to cache a parsed data
 # structure.
 #
 
-sub StorableSave {
-  my($data, $filename) = @_;
+sub cache_write_storable {
+  my($self, $data, $filename) = @_;
 
-  my $cachefile = $filename;
-  $cachefile =~ s{(\.xml)?$}{.stor};
+  my $cachefile = $self->storable_filename($filename);
 
   require Storable;           # We didn't need it until now
 
@@ -371,18 +364,17 @@ sub StorableSave {
 
 
 ##############################################################################
-# Sub: StorableRestore()
+# Method: cache_read_storable()
 #
 # Wrapper routine for invoking Storable::retrieve() to read a cached parsed
 # data structure.  Only returns cached data if the cache file exists and is
 # newer than the source XML file.
 #
 
-sub StorableRestore {
-  my($filename) = @_;
+sub cache_read_storable {
+  my($self, $filename) = @_;
   
-  my $cachefile = $filename;
-  $cachefile =~ s{(\.xml)?$}{.stor};
+  my $cachefile = $self->storable_filename($filename);
 
   return unless(-r $cachefile);
   return unless((stat($cachefile))[9] > (stat($filename))[9]);
@@ -400,27 +392,43 @@ sub StorableRestore {
 
 
 ##############################################################################
-# Sub: MemShareSave()
+# Method: storable_filename()
+#
+# Translates the supplied source XML filename into a filename for the storable
+# cached data.  A '.stor' suffix is added after stripping an optional '.xml'
+# suffix.
+#
+
+sub storable_filename {
+  my($self, $cachefile) = @_;
+
+  $cachefile =~ s{(\.xml)?$}{.stor};
+  return $cachefile;
+}
+
+
+##############################################################################
+# Method: cache_write_memshare()
 #
 # Takes the supplied data structure reference and stores it away in a global
 # hash structure.
 #
 
-sub MemShareSave {
-  my($data, $filename) = @_;
+sub cache_write_memshare {
+  my($self, $data, $filename) = @_;
 
   $MemShareCache{$filename} = [time(), $data];
 }
 
 
 ##############################################################################
-# Sub: MemShareRestore()
+# Method: cache_read_memshare()
 #
 # Takes a filename and looks in a global hash for a cached parsed version.
 #
 
-sub MemShareRestore {
-  my($filename) = @_;
+sub cache_read_memshare {
+  my($self, $filename) = @_;
   
   return unless($MemShareCache{$filename});
   return unless($MemShareCache{$filename}->[0] > (stat($filename))[9]);
@@ -431,14 +439,14 @@ sub MemShareRestore {
 
 
 ##############################################################################
-# Sub: MemCopySave()
+# Method: cache_write_memcopy()
 #
 # Takes the supplied data structure and stores a copy of it in a global hash
 # structure.
 #
 
-sub MemCopySave {
-  my($data, $filename) = @_;
+sub cache_write_memcopy {
+  my($self, $data, $filename) = @_;
 
   require Storable;           # We didn't need it until now
   
@@ -447,14 +455,14 @@ sub MemCopySave {
 
 
 ##############################################################################
-# Sub: MemCopyRestore()
+# Method: cache_read_memcopy()
 #
 # Takes a filename and looks in a global hash for a cached parsed version.
 # Returns a reference to a copy of that data structure.
 #
 
-sub MemCopyRestore {
-  my($filename) = @_;
+sub cache_read_memcopy {
+  my($self, $filename) = @_;
   
   return unless($MemCopyCache{$filename});
   return unless($MemCopyCache{$filename}->[0] > (stat($filename))[9]);
@@ -682,6 +690,11 @@ sub handle_options  {
   }
   if($opt->{cache}) {
     $_ = lc($_) foreach (@{$opt->{cache}});
+    foreach my $scheme (@{$opt->{cache}}) {
+      my $method = 'cache_read_' . $scheme;
+      croak "Unsupported caching scheme: $scheme"
+        unless($self->can($method));
+    }
   }
   
   if(exists($opt->{parseropts})) {
