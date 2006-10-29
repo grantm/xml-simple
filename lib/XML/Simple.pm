@@ -18,7 +18,7 @@ Or the object oriented way:
 
     require XML::Simple;
 
-    my $xs = new XML::Simple(options);
+    my $xs = XML::Simple->new(options);
 
     my $ref = $xs->XMLin([<xml file or string>] [, <options>]);
 
@@ -149,7 +149,7 @@ sub XMLin {
     $self = shift;
   }
   else {
-    $self = new XML::Simple();
+    $self = XML::Simple->new();
   }
 
 
@@ -321,7 +321,7 @@ sub build_tree_xml_parser {
     carp "'nsexpand' option requires XML::SAX";
   }
 
-  my $xp = new XML::Parser(Style => 'Tree', @{$self->{opt}->{parseropts}});
+  my $xp = XML::Parser->new(Style => 'Tree', @{$self->{opt}->{parseropts}});
   my($tree);
   if($filename) {
     # $tree = $xp->parsefile($filename);  # Changed due to prob w/mod_perl
@@ -490,7 +490,7 @@ sub XMLout {
     $self = shift;
   }
   else {
-    $self = new XML::Simple();
+    $self = XML::Simple->new();
   }
 
   croak "XMLout() requires at least one argument" unless(@_);
@@ -1900,7 +1900,7 @@ will be parsed directly.  eg:
 
 An IO::Handle object will be read to EOF and its contents parsed. eg:
 
-  $fh = new IO::File('/etc/params.xml');
+  $fh = IO::File->new('/etc/params.xml');
   $ref = XMLin($fh);
 
 =back
@@ -2651,7 +2651,7 @@ defaults with your preferred values.  It works like this:
 
 First create an XML::Simple parser object with your preferred defaults:
 
-  my $xs = new XML::Simple(ForceArray => 1, KeepRoot => 1);
+  my $xs = XML::Simple->new(ForceArray => 1, KeepRoot => 1);
 
 then call C<XMLin()> or C<XMLout()> as a method of that object:
 
