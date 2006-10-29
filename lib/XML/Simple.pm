@@ -130,6 +130,25 @@ sub new {
 
 
 ##############################################################################
+# Sub: _get_object()
+#
+# Helper routine called from XMLin() and XMLout() to create an object if none
+# was provided.  Note, this routine does mess with the caller's @_ array.
+#
+
+sub _get_object {
+  my $self;
+  if($_[0]  and  UNIVERSAL::isa($_[0], 'XML::Simple')) {
+    $self = shift;
+  }
+  else {
+    $self = XML::Simple->new();
+  }
+  
+  return $self;
+}
+
+##############################################################################
 # Sub/Method: XMLin()
 #
 # Exported routine for slurping XML into a hashref - see pod for info.
@@ -141,17 +160,7 @@ sub new {
 #
 
 sub XMLin {
-
-  # If this is not a method call, create an object
-
-  my $self;
-  if($_[0]  and  UNIVERSAL::isa($_[0], 'XML::Simple')) {
-    $self = shift;
-  }
-  else {
-    $self = XML::Simple->new();
-  }
-
+  my $self = &_get_object;      # note, @_ is passed implicitly
 
   my $string = shift;
 
@@ -482,16 +491,7 @@ sub cache_read_memcopy {
 #
 
 sub XMLout {
-
-  # If this is not a method call, create an object
-
-  my $self;
-  if($_[0]  and  UNIVERSAL::isa($_[0], 'XML::Simple')) {
-    $self = shift;
-  }
-  else {
-    $self = XML::Simple->new();
-  }
+  my $self = &_get_object;      # note, @_ is passed implicitly
 
   croak "XMLout() requires at least one argument" unless(@_);
   my $ref = shift;
