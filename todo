@@ -1,10 +1,6 @@
 To Release
 ==========
-- fix infinite loop reported by Lee Goddard
-- add new_hashref hook method
-- refactored cache save/restore methods for easier overriding
 
 To Do
 =====
-- make options handling method overridable
 - add a parse_string method?

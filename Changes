@@ -1,7 +1,9 @@
 Revision history for Perl module XML::Simple
 
-2.16  ??? ?? 2006
-      - Added test for bad GroupTags option (report from Lee Goddard)
+2.16  Oct 30 2006
+      - Added test/fix for bad GroupTags option (report from Lee Goddard)
+      - Added new_hashref() hook method
+      - refactored cache save/restore methods for easier overriding
 
 2.15  Oct 03 2006
       - Makefile.PL changes: reject known-bad PurePerl and RTF parser modules;

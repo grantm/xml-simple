@@ -25,8 +25,9 @@ my $last_warning = '';
 $@ = '';
 eval "use XML::Simple;";
 is($@, '', 'Module compiled OK');
-unless($XML::Simple::VERSION eq '2.15') {
-  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected 2.15)");
+my $version = '2.16';
+unless($XML::Simple::VERSION eq $version) {
+  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected $version)");
 }
 
 
