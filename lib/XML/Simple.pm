@@ -148,6 +148,7 @@ sub _get_object {
   return $self;
 }
 
+
 ##############################################################################
 # Sub/Method: XMLin()
 #
@@ -162,88 +163,158 @@ sub _get_object {
 sub XMLin {
   my $self = &_get_object;      # note, @_ is passed implicitly
 
-  my $string = shift;
+  my $target = shift;
+
+
+  # Work out whether to parse a string, a file or a filehandle
+
+  if(not defined $target) {
+    return $self->parse_file(undef, @_);
+  }
+
+  elsif($target eq '-') {
+    local($/) = undef;
+    $target = <STDIN>;
+    return $self->parse_string(\$target, @_);
+  }
+
+  elsif(my $type = ref($target)) {
+    if($type eq 'SCALAR') {
+      return $self->parse_string($target, @_);
+    }
+    else {
+      return $self->parse_fh($target, @_);
+    }
+  }
+
+  elsif($target =~ m{<.*?>}s) {
+    return $self->parse_string(\$target, @_);
+  }
+
+  else {
+    return $self->parse_file($target, @_);
+  }
+}
+
+
+##############################################################################
+# Sub/Method: parse_file()
+#
+# Same as XMLin, but only parses from a named file.
+#
+
+sub parse_file {
+  my $self = &_get_object;      # note, @_ is passed implicitly
+
+  my $filename = shift;
 
   $self->handle_options('in', @_);
 
+  $filename = $self->default_config_file if not defined $filename;
 
-  # If no XML or filename supplied, look for scriptname.xml in script directory
+  $filename = $self->find_xml_file($filename, @{$self->{opt}->{searchpath}});
 
-  unless(defined($string))  {
-    
-    # Translate scriptname[.suffix] to scriptname.xml
+  # Check cache for previous parse
 
-    require File::Basename;
-
-    my($ScriptName, $ScriptDir, $Extension) =
-      File::Basename::fileparse($0, '\.[^\.]+');
-
-    $string = $ScriptName . '.xml';
-
-
-    # Add script directory to searchpath
-    
-    if($ScriptDir) {
-      unshift(@{$self->{opt}->{searchpath}}, $ScriptDir);
-    }
-  }
-  
-
-  # Are we parsing from a file?  If so, is there a valid cache available?
-
-  my($filename, $scheme);
-  unless($string =~ m{<.*?>}s  or  ref($string)  or  $string eq '-') {
-
-    require File::Basename;
-    require File::Spec;
-
-    $filename = $self->find_xml_file($string, @{$self->{opt}->{searchpath}});
-
-    if($self->{opt}->{cache}) {
-      foreach $scheme (@{$self->{opt}->{cache}}) {
-        my $method = 'cache_read_' . $scheme;
-        my $opt = $self->$method($filename);
-        return($opt) if($opt);
-      }
-    }
-  }
-  else {
-    delete($self->{opt}->{cache});
-    if($string eq '-') {
-      # Read from standard input
-
-      local($/) = undef;
-      $string = <STDIN>;
+  if($self->{opt}->{cache}) {
+    foreach my $scheme (@{$self->{opt}->{cache}}) {
+      my $method = 'cache_read_' . $scheme;
+      my $opt = $self->$method($filename);
+      return($opt) if($opt);
     }
   }
 
-
-  # Parsing is required, so let's get on with it
-
-  my $tree =  $self->build_tree($filename, ref($string) ? $string : \$string);
-  undef($string);
-
-  # Now work some magic on the resulting parse tree
-
-  my($ref);
-  if($self->{opt}->{keeproot}) {
-    $ref = $self->collapse({}, @$tree);
-  }
-  else {
-    $ref = $self->collapse(@{$tree->[1]});
-  }
+  my $ref = $self->build_simple_tree($filename, undef);
 
   if($self->{opt}->{cache}) {
     my $method = 'cache_write_' . $self->{opt}->{cache}->[0];
     $self->$method($ref, $filename);
   }
 
-  return($ref);
+  return $ref;
 }
 
 
 ##############################################################################
-#Method: build_tree()
+# Sub/Method: parse_fh()
+#
+# Same as XMLin, but only parses from a filehandle.
+#
+
+sub parse_fh {
+  my $self = &_get_object;      # note, @_ is passed implicitly
+
+  my $fh = shift;
+  croak "Can't use " . (defined $fh ? qq{string ("$fh")} : 'undef') .
+        " as a filehandle" unless ref $fh;
+
+  $self->handle_options('in', @_);
+
+  return $self->build_simple_tree(undef, $fh);
+}
+
+
+##############################################################################
+# Sub/Method: parse_string()
+#
+# Same as XMLin, but only parses from a string or a reference to a string.
+#
+
+sub parse_string {
+  my $self = &_get_object;      # note, @_ is passed implicitly
+
+  my $string = shift;
+
+  $self->handle_options('in', @_);
+
+  return $self->build_simple_tree(undef, ref $string ? $string : \$string);
+}
+
+
+##############################################################################
+# Method: default_config_file()
+#
+# Returns the name of the XML file to parse if no filename (or XML string) 
+# was provided.
+#
+
+sub default_config_file {
+  my $self = shift;
+
+  require File::Basename;
+
+  my($basename, $script_dir, $ext) = File::Basename::fileparse($0, '\.[^\.]+');
+
+  # Add script directory to searchpath
+  
+  if($script_dir) {
+    unshift(@{$self->{opt}->{searchpath}}, $script_dir);
+  }
+
+  return $basename . '.xml';
+}
+
+
+##############################################################################
+# Method: build_simple_tree()
+#
+# Builds a 'tree' data structure as provided by XML::Parser and then 
+# 'simplifies' it as specified by the various options in effect.
+#
+
+sub build_simple_tree {
+  my $self = shift;
+
+  my $tree = $self->build_tree(@_);
+
+  return $self->{opt}->{keeproot}
+         ? $self->collapse({}, @$tree)
+         : $self->collapse(@{$tree->[1]});
+}
+
+
+##############################################################################
+# Method: build_tree()
 #
 # This routine will be called if there is no suitable pre-parsed tree in a
 # cache.  It parses the XML and returns an XML::Parser 'Tree' style data
@@ -846,8 +917,10 @@ sub find_xml_file  {
   my @search_path = @_;
 
 
-  my($filename, $filedir) =
-    File::Basename::fileparse($file);
+  require File::Basename;
+  require File::Spec;
+
+  my($filename, $filedir) = File::Basename::fileparse($file);
 
   if($filename ne $file) {        # Ignore searchpath if dir component
     return($file) if(-e $file);
@@ -2670,6 +2743,51 @@ method).
 Note: when called as methods, the C<XMLin()> and C<XMLout()> routines may be
 called as C<xml_in()> or C<xml_out()>.  The method names are aliased so the
 only difference is the aesthetics.
+
+=head2 Parsing Methods
+
+You can explicitly call one of the following methods rather than rely on the
+C<xml_in()> method automatically determining whether the target to be parsed is
+a string, a file or a filehandle:
+
+=over 4
+
+=item parse_string
+
+Works exactly like the C<xml_in()> method but assumes the first argument is
+a string of XML (or a reference to a scalar containing a string of XML).
+
+=item parse_file
+
+Works exactly like the C<xml_in()> method but assumes the first argument is
+the name of a file containing XML.
+
+=item parse_fh
+
+Works exactly like the C<xml_in()> method but assumes the first argument is
+a filehandle which can be read to get XML.
+
+=back
+
+=head2 Hook Methods
+
+You can make your own class which inherits from XML::Simple and overrides
+certain behaviour.  The following methods may provide useful 'hooks' upon which
+to hang your modified behaviour.  You may find other undocumented places by
+examining the source, but those methods may change in future releases.
+
+=over 4
+
+=item default_config_file
+
+Calculates and returns the name of the file which should be parsed if no
+filename is passed to C<XMLin()> (default: C<$0.xml>).
+
+=item TODO
+
+more here
+
+=back
 
 =head1 STRICT MODE
 
