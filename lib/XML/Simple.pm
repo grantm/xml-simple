@@ -324,7 +324,7 @@ sub build_simple_tree {
 # XML.  If XML::SAX is installed, the default SAX parser will be used,
 # otherwise XML::Parser will be used.
 #
-# This routine expects to be passed a 'string' as argument 1 or a filename as
+# This routine expects to be passed a filename as argument 1 or a 'string' as
 # argument 2.  The 'string' might be a string of XML (passed by reference to
 # save memory) or it might be a reference to an IO::Handle.  (This
 # non-intuitive mess results in part from the way XML::Parser works but that's
@@ -2735,11 +2735,6 @@ You can also specify options when you make the method calls and these values
 will be merged with the values specified when the object was created.  Values
 specified in a method call take precedence.
 
-Overriding methods is a more advanced topic but might be useful if for example
-you wished to provide an alternative routine for escaping character data (the
-escape_value method) or for building the initial parse tree (the build_tree
-method).
-
 Note: when called as methods, the C<XMLin()> and C<XMLout()> routines may be
 called as C<xml_in()> or C<xml_out()>.  The method names are aliased so the
 only difference is the aesthetics.
@@ -2752,17 +2747,17 @@ a string, a file or a filehandle:
 
 =over 4
 
-=item parse_string
+=item parse_string(text)
 
 Works exactly like the C<xml_in()> method but assumes the first argument is
 a string of XML (or a reference to a scalar containing a string of XML).
 
-=item parse_file
+=item parse_file(filename)
 
 Works exactly like the C<xml_in()> method but assumes the first argument is
 the name of a file containing XML.
 
-=item parse_fh
+=item parse_fh(file_handle)
 
 Works exactly like the C<xml_in()> method but assumes the first argument is
 a filehandle which can be read to get XML.
@@ -2772,22 +2767,76 @@ a filehandle which can be read to get XML.
 =head2 Hook Methods
 
 You can make your own class which inherits from XML::Simple and overrides
-certain behaviour.  The following methods may provide useful 'hooks' upon which
-to hang your modified behaviour.  You may find other undocumented places by
-examining the source, but those methods may change in future releases.
+certain behaviours.  The following methods may provide useful 'hooks' upon
+which to hang your modified behaviour.  You may find other undocumented methods
+by examining the source, but those may be subject to change in future releases.
 
 =over 4
 
-=item default_config_file
+=item handle_options(direction, name => value ...)
+
+This method will be called when one of the parsing methods or the C<XMLout()>
+method is called.  The initial argument will be a string (either 'in' or 'out')
+and the remaining arguments will be name value pairs.
+
+=item default_config_file()
 
 Calculates and returns the name of the file which should be parsed if no
 filename is passed to C<XMLin()> (default: C<$0.xml>).
 
-=item TODO
+=item build_simple_tree(filename, string)
 
-more here
+Called from C<XMLin()> or any of the parsing methods.  Takes either a file name
+as the first argument or C<undef> followed by a 'string' as the second
+argument.  Returns a simple tree data structure.  You could override this
+method to apply your own transformations before the data structure is returned
+to the caller.
+
+=item new_hashref()
+
+When the 'simple tree' data structure is being built, this method will be
+called to create any required anonymous hashrefs.
+
+=item sorted_keys(name, hashref)
+
+Called when C<XMLout()> is translating a hashref to XML.  This routine returns
+a list of hash keys in the order that the corresponding attributes/elements
+should appear in the output.
+
+=item escape_value(string)
+
+Called from C<XMLout()>, takes a string and returns a copy of the string with
+XML character escaping rules applied.
+
+=item numeric_escape(string)
+
+Called from C<escape_value()>, to handle non-ASCII characters (depending on the
+value of the NumericEscape option).
+
+=item copy_hash(hashref, extra_key => value, ...)
+
+Called from C<XMLout()>, when 'unfolding' a hash of hashes into an array of
+hashes.  You might wish to override this method if you're using tied hashes and
+don't want them to get untied.
 
 =back
+
+=head2 Cache Methods
+
+XML::Simple implements three caching schemes ('storable', 'memshare' and
+'memcopy').  You can implement a custom caching scheme by implementing
+two methods - one for reading from the cache and one for writing to it.
+
+For example, you might implement a new 'dbm' scheme that stores cached data
+structures using the L<MLDBM> module.  First, you would add a
+C<cache_read_dbm()> method which accepted a filename for use as a lookup key
+and returned a data structure on success, or undef on failure.  Then, you would
+implement a C<cache_read_dbm()> method which accepted a data structure and a
+filename.
+
+You would use this caching scheme by specifying the option:
+
+  Cache => [ 'dbm' ]
 
 =head1 STRICT MODE
 
