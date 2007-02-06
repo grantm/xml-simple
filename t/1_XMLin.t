@@ -1451,7 +1451,7 @@ $target = {
     }
   }
 };
-is_deeply($target, $opt, 'successfully read an SRT config file');
+is_deeply($opt, $target, 'successfully read an SRT config file');
 
 
 exit(0);
