@@ -3,6 +3,7 @@ Revision history for Perl module XML::Simple
 2.17  ??? ?? 2007
       - Added parse_string(), parse_file() and parse_fh() methods
       - Added default_config_file(), and build_simple_tree() hook methods
+      - Use $Exporter::ExportLevel (patch from Stuart Moore)
       - Documented hook methods
 
 2.16  Oct 30 2006

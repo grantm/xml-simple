@@ -97,7 +97,7 @@ sub import {
 
   # Pass everything else to Exporter.pm
 
-  __PACKAGE__->export_to_level(1, grep(!/^:strict$/, @_));
+  __PACKAGE__->export_to_level($Exporter::ExportLevel + 1, grep(!/^:strict$/, @_));
 }
 
 
