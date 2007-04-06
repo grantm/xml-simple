@@ -90,14 +90,14 @@ my %MemCopyCache   = ();
 #
 
 sub import {
-
   # Handle the :strict tag
   
   $StrictMode = 1 if grep(/^:strict$/, @_);
 
   # Pass everything else to Exporter.pm
 
-  __PACKAGE__->export_to_level($Exporter::ExportLevel + 1, grep(!/^:strict$/, @_));
+  @_ = grep(!/^:strict$/, @_);
+  goto &Exporter::import;
 }
 
 
