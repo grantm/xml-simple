@@ -25,9 +25,15 @@ my $last_warning = '';
 $@ = '';
 eval "use XML::Simple;";
 is($@, '', 'Module compiled OK');
-my $version = '2.16';
+my $version = 'unknown';
+if(open my $chg, '<Changes') {
+  while(<$chg>) {
+    last if ($version) = $_ =~ /^([\d\._]+) /;
+  }
+  close($chg);
+}
 unless($XML::Simple::VERSION eq $version) {
-  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (expected $version)");
+  diag("Warning: XML::Simple::VERSION = $XML::Simple::VERSION (Changes version: $version)");
 }
 
 
