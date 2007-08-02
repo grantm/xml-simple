@@ -5,7 +5,7 @@ Revision history for Perl module XML::Simple
       - Added default_config_file(), and build_simple_tree() hook methods
       - Tweak to implementation of exporting (patch from Stuart Moore)
       - Documented hook methods
-      - Fixed test suite race condition (report from Andreas J. König)
+      - Fixed test suite race condition (RT#28603 from Andreas J. König)
 
 2.16  Oct 30 2006
       - Added test/fix for bad GroupTags option (report from Lee Goddard)

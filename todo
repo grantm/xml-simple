@@ -1,12 +1,13 @@
 To Release
 ==========
-- add a parse_string method? (+ parse_file / parse_fh ?)
-- document hook and cache methods
 
 To Do
 =====
+- add hook for skipping keys on XMLout
 - tests for parse methods
+- add a hook method for setting the name of <anon> tags
 - more tests for hook methods
 - implement exception objects
 - rename methods to: xml_in_(string|file|fh)
 - change docs to use OO style?
+- support <itemdata name="x" value="y" /> form (NameValueElements => { itemdata => ['name', 'value']} )
