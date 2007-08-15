@@ -53,7 +53,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $PREFERRED_PARSER);
 @ISA               = qw(Exporter);
 @EXPORT            = qw(XMLin XMLout);
 @EXPORT_OK         = qw(xml_in xml_out);
-$VERSION           = '2.17';
+$VERSION           = '2.18';
 $PREFERRED_PARSER  = undef;
 
 my $StrictMode     = 0;
@@ -1233,23 +1233,19 @@ sub array_to_hash {
       ) {
         $val = $arrayref->[$i]->{$key};
         if(ref($val)) {
-          if($StrictMode) {
-            croak "<$name> element has non-scalar '$key' key attribute";
-          }
-          if($^W) {
-            carp "Warning: <$name> element has non-scalar '$key' key attribute";
-          }
+          $self->die_or_warn("<$name> element has non-scalar '$key' key attribute");
           return($arrayref);
         }
         $val = $self->normalise_space($val)
           if($self->{opt}->{normalisespace} == 1);
+        $self->die_or_warn("<$name> element has non-unique value in '$key' key attribute: $val")
+          if(exists($hashref->{$val}));
         $hashref->{$val} = { %{$arrayref->[$i]} };
         $hashref->{$val}->{"-$key"} = $hashref->{$val}->{$key} if($flag eq '-');
         delete $hashref->{$val}->{$key} unless($flag eq '+');
       }
       else {
-        croak "<$name> element has no '$key' key attribute" if($StrictMode);
-        carp "Warning: <$name> element has no '$key' key attribute" if($^W);
+        $self->die_or_warn("<$name> element has no '$key' key attribute");
         return($arrayref);
       }
     }
@@ -1259,15 +1255,24 @@ sub array_to_hash {
   # Or assume keyattr => [ .... ]
 
   else {
+    my $default_keys =
+      join(',', @DefKeyAttr) eq join(',', @{$self->{opt}->{keyattr}});
+
     ELEMENT: for($i = 0; $i < @$arrayref; $i++)  {
       return($arrayref) unless(UNIVERSAL::isa($arrayref->[$i], 'HASH'));
 
       foreach $key (@{$self->{opt}->{keyattr}}) {
         if(defined($arrayref->[$i]->{$key}))  {
           $val = $arrayref->[$i]->{$key};
-          return($arrayref) if(ref($val));
+          if(ref($val)) {
+            $self->die_or_warn("<$name> element has non-scalar '$key' key attribute")
+              if not $default_keys;
+            return($arrayref);
+          }
           $val = $self->normalise_space($val)
             if($self->{opt}->{normalisespace} == 1);
+          $self->die_or_warn("<$name> element has non-unique value in '$key' key attribute: $val")
+            if(exists($hashref->{$val}));
           $hashref->{$val} = { %{$arrayref->[$i]} };
           delete $hashref->{$val}->{$key};
           next ELEMENT;
@@ -1285,6 +1290,25 @@ sub array_to_hash {
   }
  
   return($hashref);
+}
+
+
+##############################################################################
+# Method: die_or_warn()
+#
+# Takes a diagnostic message and does one of three things:
+# 1. dies if strict mode is enabled
+# 2. warns if warnings are enabled but strict mode is not
+# 3. ignores message and resturns silently if neither strict mode nor warnings
+#    are enabled
+# 
+
+sub die_or_warn {
+  my $self = shift;
+  my $msg  = shift;
+
+  croak $msg if($StrictMode);
+  carp "Warning: $msg" if($^W);
 }
 
 
@@ -2869,6 +2893,12 @@ Data error - KeyAttr is set to say { part => 'partnum' } but the XML contains
 one or more E<lt>partE<gt> elements without a 'partnum' attribute (or nested
 element).  Note: if strict mode is not set but -w is, this condition triggers a
 warning.
+
+=item * 
+
+Data error - as above, but non-unique values are present in the key attribute
+(eg: more than one E<lt>partE<gt> element with the same partnum).  This will
+also trigger a warning if strict mode is not enabled.
 
 =item * 
 

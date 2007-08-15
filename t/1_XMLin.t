@@ -17,7 +17,7 @@ unless(-e $XMLFile) {
   plan skip_all => 'Test data missing';
 }
 
-plan tests => 122;
+plan tests => 131;
 
 
 my $last_warning = '';
@@ -363,17 +363,26 @@ $target = {
   ]
 };
 
-$last_warning = '';
-$opt = XMLin($xml, @cont_key);
-is_deeply($opt, $target, "did not fold on default key with non-scalar value");
-is($last_warning, '', 'no warning issued');
-
 {
   local($SIG{__WARN__}) = \&warn_handler;
 
   $last_warning = '';
+  $opt = XMLin($xml, @cont_key);
+  is_deeply($opt, $target, "did not fold on default key with non-scalar value");
+  is($last_warning, '', 'no warning issued');
+
+  $last_warning = '';
   $opt = XMLin($xml, keyattr => { item => 'name' }, @cont_key);
   is_deeply($opt, $target, "did not fold on specific key with non-scalar value");
+  isnt($last_warning, '', 'warning issued as expected');
+  like($last_warning, 
+    qr{<item> element has non-scalar 'name' key attribute},
+    'text in warning is correct'
+  );
+
+  $last_warning = '';
+  $opt = XMLin($xml, keyattr => [ 'name' ], @cont_key);
+  is_deeply($opt, $target, "same again but with keyattr as array");
   isnt($last_warning, '', 'warning issued as expected');
   like($last_warning, 
     qr{<item> element has non-scalar 'name' key attribute},
@@ -403,6 +412,38 @@ is($last_warning, '', 'no warning issued');
   $opt = XMLin($xitems, keyattr => { item => 'name' }, @cont_key);
   is_deeply($opt, $items, "did not fold when element missing key attribute");
   like($last_warning, qr{Warning: <item> element has no 'name' key attribute},
+    'expected warning issued');
+
+  $last_warning = '';
+  $^W = 0;
+  $opt = XMLin($xitems, keyattr => { item => 'name' }, @cont_key);
+  is_deeply($opt, $items, "same again");
+  is($last_warning, '', 'but with no warning this time');
+
+  $last_warning = '';
+  $^W = 1;
+  $xitems = q(<opt>
+    <item name="color">red</item>
+    <item name="mass">heavy</item>
+    <item name="disposition">ornery</item>
+    <item name="color">green</item>
+  </opt>);
+  $items = {
+    'item' => {
+      'color'       => 'green',
+      'mass'        => 'heavy',
+      'disposition' => 'ornery',
+    }
+  };
+  $opt = XMLin($xitems, keyattr => { item => 'name' }, @cont_key);
+  is_deeply($opt, $items, "folded elements despite non-unique key attribute");
+  like($last_warning, qr{Warning: <item> element has non-unique value in 'name' key attribute: color},
+    'expected warning issued');
+
+  $last_warning = '';
+  $opt = XMLin($xitems, keyattr => [ 'name' ], @cont_key);
+  is_deeply($opt, $items, "same again but with keyattr as array");
+  like($last_warning, qr{Warning: <item> element has non-unique value in 'name' key attribute: color},
     'expected warning issued');
 
   $last_warning = '';
