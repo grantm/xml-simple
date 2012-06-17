@@ -1,5 +1,3 @@
-# $Id$
-
 package XML::Simple;
 
 =head1 NAME

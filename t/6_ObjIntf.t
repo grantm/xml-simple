@@ -1,5 +1,3 @@
-# $Id$
-# vim: syntax=perl
 
 use strict;
 
