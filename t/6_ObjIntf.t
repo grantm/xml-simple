@@ -102,9 +102,9 @@ my $xml = q(<cddatabase>
 
 my %opts1 = (
   keyattr => { disc => 'cddbid', track => 'number' },
-  keeproot => 1, 
+  keeproot => 1,
   contentkey => 'title',
-  forcearray => [ qw(disc album) ] 
+  forcearray => [ qw(disc album) ]
 );
 
 my %opts2 = (
@@ -113,9 +113,9 @@ my %opts2 = (
 
 my %opts3 = (
   keyattr => { disc => 'cddbid', track => 'number' },
-  keeproot => 1, 
+  keeproot => 1,
   contentkey => '-title',
-  forcearray => [ qw(disc album) ] 
+  forcearray => [ qw(disc album) ]
 );
 
 my $xs1 = new XML::Simple( %opts1 );
@@ -126,9 +126,9 @@ isa_ok($xs2, 'XML::Simple', 'object two');
 isa_ok($xs3, 'XML::Simple', 'object three');
 is_deeply(\%opts1, {
   keyattr => { disc => 'cddbid', track => 'number' },
-  keeproot => 1, 
+  keeproot => 1,
   contentkey => 'title',
-  forcearray => [ qw(disc album) ] 
+  forcearray => [ qw(disc album) ]
 }, 'options hash was not corrupted');
 
 my $exp1 = {
@@ -288,7 +288,7 @@ $_ = eval {
   $xs1->XMLout();
 };
 ok(!defined($_), 'XMLout() method call with no args proves fatal');
-like($@, qr/XMLout\(\) requires at least one argument/, 
+like($@, qr/XMLout\(\) requires at least one argument/,
 'with correct error message');
 
 
@@ -333,7 +333,7 @@ like($_, qr{<opt>\s*
 # subsequent parses
 
 $xs1 = XML::Simple->new(
-  contentkey => '-content', 
+  contentkey => '-content',
   varattr    => 'xsvar',
   variables  => { conf_dir => '/etc', log_dir => '/tmp' }
 );

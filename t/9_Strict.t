@@ -36,7 +36,7 @@ eval {
 };
 
 isnt($@, '', 'omitting forcearray was a fatal error');
-like($@, qr/(?i)No value specified for 'forcearray'/, 
+like($@, qr/(?i)No value specified for 'forcearray'/,
   'with the correct error message');
 
 
@@ -209,7 +209,7 @@ eval {
 };
 
 isnt($@, '', 'omitting forcearray was a fatal error');
-like($@, qr/(?i)No value specified for 'forcearray'/, 
+like($@, qr/(?i)No value specified for 'forcearray'/,
   'with the correct error message');
 
 

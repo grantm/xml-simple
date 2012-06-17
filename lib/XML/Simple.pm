@@ -88,7 +88,7 @@ my %MemCopyCache   = ();
 
 sub import {
   # Handle the :strict tag
-  
+
   $StrictMode = 1 if grep(/^:strict$/, @_);
 
   # Pass everything else to Exporter.pm
@@ -141,7 +141,7 @@ sub _get_object {
   else {
     $self = XML::Simple->new();
   }
-  
+
   return $self;
 }
 
@@ -271,7 +271,7 @@ sub parse_string {
 ##############################################################################
 # Method: default_config_file()
 #
-# Returns the name of the XML file to parse if no filename (or XML string) 
+# Returns the name of the XML file to parse if no filename (or XML string)
 # was provided.
 #
 
@@ -283,7 +283,7 @@ sub default_config_file {
   my($basename, $script_dir, $ext) = File::Basename::fileparse($0, '\.[^\.]+');
 
   # Add script directory to searchpath
-  
+
   if($script_dir) {
     unshift(@{$self->{opt}->{searchpath}}, $script_dir);
   }
@@ -295,7 +295,7 @@ sub default_config_file {
 ##############################################################################
 # Method: build_simple_tree()
 #
-# Builds a 'tree' data structure as provided by XML::Parser and then 
+# Builds a 'tree' data structure as provided by XML::Parser and then
 # 'simplifies' it as specified by the various options in effect.
 #
 
@@ -353,7 +353,7 @@ sub build_tree {
   $XML::SAX::ParserPackage = $preferred_parser if($preferred_parser);
 
   my $sp = XML::SAX::ParserFactory->parser(Handler => $self);
-  
+
   $self->{nocollapse} = 1;
   my($tree);
   if($filename) {
@@ -434,7 +434,7 @@ sub cache_write_storable {
     # If the following line fails for you, your Storable.pm is old - upgrade
     Storable::lock_nstore($data, $cachefile);
   }
-  
+
 }
 
 
@@ -448,21 +448,21 @@ sub cache_write_storable {
 
 sub cache_read_storable {
   my($self, $filename) = @_;
-  
+
   my $cachefile = $self->storable_filename($filename);
 
   return unless(-r $cachefile);
   return unless((stat($cachefile))[9] > (stat($filename))[9]);
 
   require Storable;           # We didn't need it until now
-  
+
   if ('VMS' eq $^O) {
     return(Storable::retrieve($cachefile));
   }
   else {
     return(Storable::lock_retrieve($cachefile));
   }
-  
+
 }
 
 
@@ -504,12 +504,12 @@ sub cache_write_memshare {
 
 sub cache_read_memshare {
   my($self, $filename) = @_;
-  
+
   return unless($MemShareCache{$filename});
   return unless($MemShareCache{$filename}->[0] > (stat($filename))[9]);
 
   return($MemShareCache{$filename}->[1]);
-  
+
 }
 
 
@@ -524,7 +524,7 @@ sub cache_write_memcopy {
   my($self, $data, $filename) = @_;
 
   require Storable;           # We didn't need it until now
-  
+
   $MemCopyCache{$filename} = [time(), Storable::dclone($data)];
 }
 
@@ -538,12 +538,12 @@ sub cache_write_memcopy {
 
 sub cache_read_memcopy {
   my($self, $filename) = @_;
-  
+
   return unless($MemCopyCache{$filename});
   return unless($MemCopyCache{$filename}->[0] > (stat($filename))[9]);
 
   return(Storable::dclone($MemCopyCache{$filename}->[1]));
-  
+
 }
 
 
@@ -590,7 +590,7 @@ sub XMLout {
       $self->{opt}->{rootname} = $keys[0];
     }
   }
-  
+
   # Ensure there are no top level attributes if we're not adding root elements
 
   elsif($self->{opt}->{rootname} eq '') {
@@ -672,7 +672,7 @@ sub handle_options  {
 
   # Determine valid options based on context
 
-  my %known_opt; 
+  my %known_opt;
   if($dirn eq 'in') {
     @known_opt{@KnownOptIn} = @KnownOptIn;
   }
@@ -710,7 +710,7 @@ sub handle_options  {
 
 
   # Set sensible defaults if not supplied
-  
+
   if(exists($opt->{rootname})) {
     unless(defined($opt->{rootname})) {
       $opt->{rootname} = '';
@@ -719,7 +719,7 @@ sub handle_options  {
   else {
     $opt->{rootname} = $DefRootName;
   }
-  
+
   if($opt->{xmldecl}  and  $opt->{xmldecl} eq '1') {
     $opt->{xmldecl} = $DefXmlDecl;
   }
@@ -761,7 +761,7 @@ sub handle_options  {
         unless($self->can($method));
     }
   }
-  
+
   if(exists($opt->{parseropts})) {
     if($^W) {
       carp "Warning: " .
@@ -772,7 +772,7 @@ sub handle_options  {
     $opt->{parseropts} = [ ];
   }
 
-  
+
   # Special cleanup for {forcearray} which could be regex, arrayref or boolean
   # or left to default to 0
 
@@ -821,9 +821,9 @@ sub handle_options  {
 
         $opt->{keyattr} = { %{$opt->{keyattr}} };
 
-        
+
         # Convert keyattr => { elem => '+attr' }
-        # to keyattr => { elem => [ 'attr', '+' ] } 
+        # to keyattr => { elem => [ 'attr', '+' ] }
 
         foreach my $el (keys(%{$opt->{keyattr}})) {
           if($opt->{keyattr}->{$el} =~ /^(\+|-)?(.*)$/) {
@@ -886,10 +886,10 @@ sub handle_options  {
     croak "Illegal value for 'Variables' option - expected a hashref";
   }
 
-  if($opt->{variables}) { 
+  if($opt->{variables}) {
     $self->{_var_values} = { %{$opt->{variables}} };
   }
-  elsif($opt->{varattr}) { 
+  elsif($opt->{varattr}) {
     $self->{_var_values} = {};
   }
 
@@ -970,7 +970,7 @@ sub collapse {
 
 
   # Start with the hash of attributes
-  
+
   my $attr  = shift;
   if($self->{opt}->{noattr}) {                    # Discard if 'noattr' set
     $attr = {};
@@ -1021,14 +1021,14 @@ sub collapse {
 
       # do variable substitutions
 
-      if(my $var = $self->{_var_values}) { 
+      if(my $var = $self->{_var_values}) {
         $val =~ s{\$\{(\w+)\}}{ $self->get_var($1) }ge;
       }
 
-      
+
       # look for variable definitions
 
-      if(my $var = $self->{opt}->{varattr}) { 
+      if(my $var = $self->{opt}->{varattr}) {
         if(exists $attr->{$var}) {
           $self->set_var($attr->{$var}, $val);
         }
@@ -1038,7 +1038,7 @@ sub collapse {
       # Collapse text content in element with no attributes to a string
 
       if(!%$attr  and  !@_) {
-        return($self->{opt}->{forcecontent} ? 
+        return($self->{opt}->{forcecontent} ?
           { $self->{opt}->{contentkey} => $val } : $val
         );
       }
@@ -1060,10 +1060,10 @@ sub collapse {
       $attr->{$key} = [ $val ];
     }
     else {
-      if( $key ne $self->{opt}->{contentkey} 
+      if( $key ne $self->{opt}->{contentkey}
           and (
             ($self->{opt}->{forcearray} == 1)
-            or ( 
+            or (
               (ref($self->{opt}->{forcearray}) eq 'HASH')
               and (
                 $self->{opt}->{forcearray}->{$key}
@@ -1112,8 +1112,8 @@ sub collapse {
   # Fold hashes containing a single anonymous array up into just the array
 
   my $count = scalar keys %$attr;
-  if($count == 1 
-     and  exists $attr->{anon}  
+  if($count == 1
+     and  exists $attr->{anon}
      and  UNIVERSAL::isa($attr->{anon}, 'ARRAY')
   ) {
     return($attr->{anon});
@@ -1276,13 +1276,13 @@ sub array_to_hash {
       return($arrayref);    # No keyfield matched
     }
   }
-  
+
   # collapse any hashes which now only have a 'content' key
 
   if($self->{opt}->{collapseagain}) {
     $hashref = $self->collapse_content($hashref);
   }
- 
+
   return($hashref);
 }
 
@@ -1295,7 +1295,7 @@ sub array_to_hash {
 # 2. warns if warnings are enabled but strict mode is not
 # 3. ignores message and resturns silently if neither strict mode nor warnings
 #    are enabled
-# 
+#
 
 sub die_or_warn {
   my $self = shift;
@@ -1311,7 +1311,7 @@ sub die_or_warn {
 #
 # This is a hook routine for overriding in a sub-class.  Some people believe
 # that using Tie::IxHash here will solve order-loss problems.
-# 
+#
 
 sub new_hashref {
   my $self = shift;
@@ -1324,7 +1324,7 @@ sub new_hashref {
 # Method: collapse_content()
 #
 # Helper routine for array_to_hash
-# 
+#
 # Arguments expected are:
 # - an XML::Simple object
 # - a hasref
@@ -1341,7 +1341,7 @@ sub new_hashref {
 
 sub collapse_content {
   my $self       = shift;
-  my $hashref    = shift; 
+  my $hashref    = shift;
 
   my $contentkey = $self->{opt}->{contentkey};
 
@@ -1360,14 +1360,14 @@ sub collapse_content {
 
   return $hashref;
 }
-  
+
 
 ##############################################################################
 # Method: value_to_xml()
 #
 # Helper routine for XMLout() - recurses through a data structure building up
 # and returning an XML representation of that structure as a string.
-# 
+#
 # Arguments expected are:
 # - the data structure to be encoded (usually a reference)
 # - the XML tag name to use for this item
@@ -1394,7 +1394,7 @@ sub value_to_xml {
 
 
   # Convert to XML
-  
+
   if(ref($ref)) {
     croak "circular data structures not supported"
       if(grep($_ == $ref, @{$self->{_ancestors}}));
@@ -1457,7 +1457,7 @@ sub value_to_xml {
 
       if(exists($ref->{xmlns})) {
         $self->{nsup}->declare_prefix('', $ref->{xmlns});
-        $nsdecls .= qq( xmlns="$ref->{xmlns}"); 
+        $nsdecls .= qq( xmlns="$ref->{xmlns}");
         delete($ref->{xmlns});
       }
       $default_ns_uri = $self->{nsup}->get_uri('');
@@ -1470,7 +1470,7 @@ sub value_to_xml {
         if($uri) {
           if($uri eq $xmlns_ns) {
             $self->{nsup}->declare_prefix($lname, $ref->{$qname});
-            $nsdecls .= qq( xmlns:$lname="$ref->{$qname}"); 
+            $nsdecls .= qq( xmlns:$lname="$ref->{$qname}");
             delete($ref->{$qname});
           }
         }
@@ -1492,7 +1492,7 @@ sub value_to_xml {
               # $prefix = $self->{nsup}->get_prefix($uri);
               $prefix = $self->{ns_prefix}++;
               $self->{nsup}->declare_prefix($prefix, $uri);
-              $nsdecls .= qq( xmlns:$prefix="$uri"); 
+              $nsdecls .= qq( xmlns:$prefix="$uri");
             }
             $ref->{"$prefix:$lname"} = $ref->{$qname};
             delete($ref->{$qname});
@@ -1528,7 +1528,7 @@ sub value_to_xml {
           }
         }
 
-        if(!ref($value)  
+        if(!ref($value)
            and $self->{opt}->{valueattr}
            and $self->{opt}->{valueattr}->{$key}
         ) {
@@ -1800,7 +1800,7 @@ sub characters {
   my $text  = $chars->{Data};
   my $clist = $self->{curlist};
   my $pos = $#$clist;
-  
+
   if ($pos > 0 and $clist->[$pos - 1] eq '0') {
     $clist->[$pos] .= $text;
   }
@@ -1833,7 +1833,7 @@ sub end_document {
 
 
   # Or collapse it before returning it to SAX parser class
-  
+
   if($self->{opt}->{keeproot}) {
     $tree = $self->collapse({}, @$tree);
   }
@@ -2000,7 +2000,7 @@ An IO::Handle object will be read to EOF and its contents parsed. eg:
 
 Takes a data structure (generally a hashref) and returns an XML encoding of
 that structure.  If the resulting XML is parsed using C<XMLin()>, it should
-return a data structure equivalent to the original (see caveats below). 
+return a data structure equivalent to the original (see caveats below).
 
 The C<XMLout()> function can also be used to output the XML as SAX events
 see the C<Handler> option and L<"SAX SUPPORT"> for more details).
@@ -2015,7 +2015,7 @@ with a leading '-' which would not be valid XML).
 
 Some care is required in creating data structures which will be passed to
 C<XMLout()>.  Hash keys from the data structure will be encoded as either XML
-element names or attribute names.  Therefore, you should use hash key names 
+element names or attribute names.  Therefore, you should use hash key names
 which conform to the relatively strict XML naming rules:
 
 Names in XML must begin with a letter.  The remaining characters may be
@@ -2027,7 +2027,7 @@ namespaces when teamed with a SAX Parser).
 You can use other punctuation characters in hash values (just not in hash
 keys) however B<XML::Simple> does not support dumping binary data.
 
-If you break these rules, the current implementation of C<XMLout()> will 
+If you break these rules, the current implementation of C<XMLout()> will
 simply emit non-compliant XML which will be rejected if you try to read it
 back in.  (A later version of B<XML::Simple> might take a more proactive
 approach).
@@ -2035,9 +2035,9 @@ approach).
 Note also that although you can nest hashes and arrays to arbitrary levels,
 circular data structures are not supported and will cause C<XMLout()> to die.
 
-If you wish to 'round-trip' arbitrary data structures from Perl to XML and back 
+If you wish to 'round-trip' arbitrary data structures from Perl to XML and back
 to Perl, then you should probably disable array folding (using the KeyAttr
-option) both with C<XMLout()> and with C<XMLin()>.  If you still don't get the 
+option) both with C<XMLout()> and with C<XMLin()>.  If you still don't get the
 expected results, you may prefer to use L<XML::Dumper> which is designed for
 exactly that purpose.
 
@@ -2176,13 +2176,13 @@ instead of:
 C<XMLout()> will also honour the value of this option when converting a hashref
 to XML.
 
-You can also prefix your selected key name with a '-' character to have 
+You can also prefix your selected key name with a '-' character to have
 C<XMLin()> try a little harder to eliminate unnecessary 'content' keys after
 array folding.  For example:
 
   XMLin(
-    '<opt><item name="one">First</item><item name="two">Second</item></opt>', 
-    KeyAttr => {item => 'name'}, 
+    '<opt><item name="one">First</item><item name="two">Second</item></opt>',
+    KeyAttr => {item => 'name'},
     ForceArray => [ 'item' ],
     ContentKey => '-content'
   )
@@ -2241,7 +2241,7 @@ instead of this (the default):
 
 This option is especially useful if the data structure is likely to be written
 back out as XML and the default behaviour of rolling single nested elements up
-into attributes is not desirable. 
+into attributes is not desirable.
 
 If you are using the array folding feature, you should almost certainly enable
 this option.  If you do not, single nested elements will not be parsed to
@@ -2330,15 +2330,15 @@ for elements as well as attributes.
 
 =head2 Handler => object_ref I<# out - SAX only>
 
-Use the 'Handler' option to have C<XMLout()> generate SAX events rather than 
+Use the 'Handler' option to have C<XMLout()> generate SAX events rather than
 returning a string of XML.  For more details see L<"SAX SUPPORT"> below.
 
 Note: the current implementation of this option generates a string of XML
 and uses a SAX parser to translate it into SAX events.  The normal encoding
-rules apply here - your data must be UTF8 encoded unless you specify an 
+rules apply here - your data must be UTF8 encoded unless you specify an
 alternative encoding via the 'XMLDecl' option; and by the time the data reaches
 the handler object, it will be in UTF8 form regardless of the encoding you
-supply.  A future implementation of this option may generate the events 
+supply.  A future implementation of this option may generate the events
 directly.
 
 =head2 KeepRoot => 1 I<# in+out - handy>
@@ -2420,7 +2420,7 @@ This alternative (and preferred) method of specifiying the key attributes
 allows more fine grained control over which elements are folded and on which
 attributes.  For example the option 'KeyAttr => { package => 'id' } will cause
 any package elements to be folded on the 'id' attribute.  No other elements
-which have an 'id' attribute will be folded at all. 
+which have an 'id' attribute will be folded at all.
 
 Note: C<XMLin()> will generate a warning (or a fatal error in L<"STRICT MODE">)
 if this syntax is used and an element which does not have the specified key
@@ -2567,9 +2567,9 @@ levels are possible:
 
 The default behaviour of C<XMLout()> is to return the XML as a string.  If you
 wish to write the XML to a file, simply supply the filename using the
-'OutputFile' option.  
+'OutputFile' option.
 
-This option also accepts an IO handle object - especially useful in Perl 5.8.0 
+This option also accepts an IO handle object - especially useful in Perl 5.8.0
 and later for output using an encoding other than UTF-8, eg:
 
   open my $fh, '>:encoding(iso-8859-1)', $path or die "open($path): $!";
@@ -2610,7 +2610,7 @@ file is assumed to be in the current directory.
 
 If the first parameter to C<XMLin()> is undefined, the default SearchPath
 will contain only the directory in which the script itself is located.
-Otherwise the default SearchPath will be empty.  
+Otherwise the default SearchPath will be empty.
 
 =head2 SuppressEmpty => 1 | '' | undef I<# in+out - handy>
 
@@ -2888,15 +2888,15 @@ one or more E<lt>partE<gt> elements without a 'partnum' attribute (or nested
 element).  Note: if strict mode is not set but -w is, this condition triggers a
 warning.
 
-=item * 
+=item *
 
 Data error - as above, but non-unique values are present in the key attribute
 (eg: more than one E<lt>partE<gt> element with the same partnum).  This will
 also trigger a warning if strict mode is not enabled.
 
-=item * 
+=item *
 
-Data error - as above, but value of key attribute (eg: partnum) is not a 
+Data error - as above, but value of key attribute (eg: partnum) is not a
 scalar string (due to nested elements etc).  This will also trigger a warning
 if strict mode is not enabled.
 
@@ -2905,7 +2905,7 @@ if strict mode is not enabled.
 =head1 SAX SUPPORT
 
 From version 1.08_01, B<XML::Simple> includes support for SAX (the Simple API
-for XML) - specifically SAX2. 
+for XML) - specifically SAX2.
 
 In a typical SAX application, an XML parser (or SAX 'driver') module generates
 SAX events (start of element, character data, end of element, etc) as it parses
@@ -3027,7 +3027,7 @@ If the 'preferred parser' is set to the string 'XML::Parser', then
 L<XML::Parser> will be used (or C<XMLin()> will die if L<XML::Parser> is not
 installed).
 
-=item * 
+=item *
 
 If the 'preferred parser' is set to some other value, then it is assumed to be
 the name of a SAX parser module and is passed to L<XML::SAX::ParserFactory.>
@@ -3221,7 +3221,7 @@ assumptions on your behalf.  These include:
 
 You're not interested in text content consisting only of whitespace
 
-=item * 
+=item *
 
 You don't mind that when things get slurped into a hash the order is lost
 
@@ -3247,7 +3247,7 @@ document which you can find at: L<http://perl-xml.sourceforge.net/faq/>
 The advice in the FAQ boils down to a quick explanation of tree versus
 event based parsers and then recommends:
 
-For event based parsing, use SAX (do not set out to write any new code for 
+For event based parsing, use SAX (do not set out to write any new code for
 XML::Parser's handler API - it is obselete).
 
 For tree-based parsing, you could choose between the 'Perlish' approach of
@@ -3266,12 +3266,12 @@ The optional caching functions require L<Storable>.
 Answers to Frequently Asked Questions about XML::Simple are bundled with this
 distribution as: L<XML::Simple::FAQ>
 
-=head1 COPYRIGHT 
+=head1 COPYRIGHT
 
 Copyright 1999-2004 Grant McLean E<lt>grantm@cpan.orgE<gt>
 
 This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself. 
+under the same terms as Perl itself.
 
 =cut
 

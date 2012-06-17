@@ -72,14 +72,14 @@ isa_ok($sx, 'XML::Simple', 'object of class ElbarotsXS');
 my $src_file = File::Spec->catfile('t', 'test1.xml');
 
 is(
-  $xs->storable_filename($src_file), 
+  $xs->storable_filename($src_file),
   File::Spec->catfile('t', 'test1.stor'),
   'default storable cache filename looks good'
 );
 
 my $cache_file = File::Spec->catfile('t', '1tset.stor'),;
 is(
-  $sx->storable_filename($src_file), 
+  $sx->storable_filename($src_file),
   $cache_file,
   'overridden storable cache filename looks good'
 );
@@ -108,8 +108,8 @@ $data = eval {
 };
 ok(! $@, 'custom cache scheme was not rejected');
 is_deeply(
-  $data, 
-  { data => 'floogle' }, 
+  $data,
+  { data => 'floogle' },
   'custom cache reading method delivered the goods'
 );
 
@@ -122,7 +122,7 @@ use base 'XML::Simple';
 
 sub storable_filename {
   my($self, $path) = @_;
-  
+
   my($vol, $dir, $file) = File::Spec->splitpath( $path );
   $file =~ s{\.xml$}{};
 

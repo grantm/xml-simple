@@ -33,7 +33,7 @@ plan tests => 8;
 
 sub CopyFile {
   my($Src, $Dst) = @_;
-  
+
   open(IN, $Src) || return(undef);
   local($/) = undef;
   my $Data = <IN>;

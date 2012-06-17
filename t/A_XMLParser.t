@@ -43,7 +43,7 @@ $ENV{XML_SIMPLE_PREFERRED_PARSER} = 'XML::Parser';
 }
 
 isnt($last_warning, '', "Parsing caused warning (as expected)");
-like($last_warning, qr/'nsexpand' option requires XML::SAX/, 
+like($last_warning, qr/'nsexpand' option requires XML::SAX/,
   'Message contained expected text');
 is_deeply($opt, {y => 'z'}, "Parsing was successful");
 
@@ -59,7 +59,7 @@ is_deeply($opt, {y => 'z'}, "Parsing was successful");
 }
 
 isnt($last_warning, '', "Using ParserOpts caused warning (as expected)");
-like($last_warning, qr/'ParserOpts' is deprecated/, 
+like($last_warning, qr/'ParserOpts' is deprecated/,
   'Message contained expected text');
 is_deeply($opt, {y => 'z'}, "Parsing was successful");
 
@@ -88,9 +88,9 @@ $opt = eval {
 };
 
 my $expected = {
-		 name1 => 'value1',
-		 name2 => 'value2',
-	       };
+                 name1 => 'value1',
+                 name2 => 'value2',
+               };
 
 is($@, '', "No error when parsing");
 is_deeply($opt, $expected, 'matches expectations (attributes)');
@@ -106,7 +106,7 @@ is_deeply($opt, {
 }, 'and contents parsed as expected');
 
 
-# Try parsing from an IO::Handle 
+# Try parsing from an IO::Handle
 
 $@ = '';
 my $fh = new IO::File;

@@ -47,7 +47,7 @@ plan tests => 7;
 
 sub CopyFile {
   my($Src, $Dst) = @_;
-  
+
   open(IN, $Src) || return(undef);
   local($/) = undef;
   my $Data = <IN>;
@@ -110,8 +110,8 @@ my $Expected  = {
 
 ok(CopyFile($SrcFile, $XMLFile), 'copied source XML file');
 $t0 = (stat($XMLFile))[9];         # Remember its timestamp
-                                      
-				      # Parse it with caching enabled
+
+                                   # Parse it with caching enabled
 my $opt = XMLin($XMLFile, cache => 'memcopy');
 is_deeply($opt, $Expected, 'parsed expected data through the cache');
 

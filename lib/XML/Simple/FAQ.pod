@@ -134,7 +134,7 @@ FAQ at:
 
 =head2 How do I install XML::Simple?
 
-If you're running ActiveState Perl, you've probably already got XML::Simple 
+If you're running ActiveState Perl, you've probably already got XML::Simple
 (although you may want to upgrade to version 1.09 or better for SAX support).
 
 If you do need to install XML::Simple, you'll need to install an XML parser
@@ -162,7 +162,7 @@ this command:
   ppm install XML::Simple
 
 If that doesn't work, you really only need the Simple.pm file, so extract it
-from the .tar.gz file (eg: using WinZIP) and save it in the \site\lib\XML 
+from the .tar.gz file (eg: using WinZIP) and save it in the \site\lib\XML
 directory under your Perl installation (typically C:\Perl).
 
 
@@ -524,7 +524,7 @@ If you're in any doubt, use Data::Dumper, eg:
 
   use XML::Simple;
   use Data::Dumper;
-  
+
   my $ref = XMLin($xml);
 
   print Dumper($ref);

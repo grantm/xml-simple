@@ -42,7 +42,7 @@ plan tests => 14;
 
 sub CopyFile {
   my($Src, $Dst) = @_;
-  
+
   open(IN, $Src) || return(undef);
   local($/) = undef;
   my $Data = <IN>;
@@ -66,28 +66,28 @@ use XML::Simple;
 
 my $Expected  = {
   'server' => {
-		'sahara' => {
-			      'osversion' => '2.6',
-			      'osname' => 'solaris',
-			      'address' => [
-					     '10.0.0.101',
-					     '10.0.1.101'
-					   ]
-			    },
-		'gobi' => {
-			    'osversion' => '6.5',
-			    'osname' => 'irix',
-			    'address' => '10.0.0.102'
-			  },
-		'kalahari' => {
-				'osversion' => '2.0.34',
-				'osname' => 'linux',
-				'address' => [
-					       '10.0.0.103',
-					       '10.0.1.103'
-					     ]
-			      }
-	      }
+                'sahara' => {
+                              'osversion' => '2.6',
+                              'osname' => 'solaris',
+                              'address' => [
+                                             '10.0.0.101',
+                                             '10.0.1.101'
+                                           ]
+                            },
+                'gobi' => {
+                            'osversion' => '6.5',
+                            'osname' => 'irix',
+                            'address' => '10.0.0.102'
+                          },
+                'kalahari' => {
+                                'osversion' => '2.0.34',
+                                'osname' => 'linux',
+                                'address' => [
+                                               '10.0.0.103',
+                                               '10.0.1.103'
+                                             ]
+                              }
+              }
 };
 
 my $xml = '';
@@ -130,7 +130,7 @@ if(open(XMLFILE, "<$XMLFile")) {
 }
 $opt = XMLin($xml);
 is_deeply($opt, $Expected, 'parsed expected value from string');
-  
+
 
 # Pass in '-' for STDIN
 
@@ -165,22 +165,22 @@ $parser = XML::SAX::ParserFactory->parser(Handler => $simple);
 $opt = $parser->parse_uri($XMLFile);
 my $Expected2 = {
   'server' => {
-		'irix' => {
-			    'address' => [ '10.0.0.102' ],
-			    'osversion' => '6.5',
-			    'name' => 'gobi'
-			  },
-		'solaris' => {
-			       'address' => [ '10.0.0.101', '10.0.1.101' ],
-			       'osversion' => '2.6',
-			       'name' => 'sahara'
-			     },
-		'linux' => {
-			     'address' => [ '10.0.0.103', '10.0.1.103' ],
-			     'osversion' => '2.0.34',
-			     'name' => 'kalahari'
-			   }
-	      }
+                'irix' => {
+                            'address' => [ '10.0.0.102' ],
+                            'osversion' => '6.5',
+                            'name' => 'gobi'
+                          },
+                'solaris' => {
+                               'address' => [ '10.0.0.101', '10.0.1.101' ],
+                               'osversion' => '2.6',
+                               'name' => 'sahara'
+                             },
+                'linux' => {
+                             'address' => [ '10.0.0.103', '10.0.1.103' ],
+                             'osversion' => '2.0.34',
+                             'name' => 'kalahari'
+                           }
+              }
 };
 
 is_deeply($opt, $Expected2, 'options passed to handler contructor work');
@@ -190,28 +190,28 @@ is_deeply($opt, $Expected2, 'options passed to handler contructor work');
 
 my $Expected3  = {
   'SERVER' => {
-		'sahara' => {
-			      'OSVERSION' => '2.6',
-			      'OSNAME' => 'solaris',
-			      'ADDRESS' => [
-					     '10.0.0.101',
-					     '10.0.1.101'
-					   ]
-			    },
-		'gobi' => {
-			    'OSVERSION' => '6.5',
-			    'OSNAME' => 'irix',
-			    'ADDRESS' => '10.0.0.102'
-			  },
-		'kalahari' => {
-				'OSVERSION' => '2.0.34',
-				'OSNAME' => 'linux',
-				'ADDRESS' => [
-					       '10.0.0.103',
-					       '10.0.1.103'
-					     ]
-			      }
-	      }
+                'sahara' => {
+                              'OSVERSION' => '2.6',
+                              'OSNAME' => 'solaris',
+                              'ADDRESS' => [
+                                             '10.0.0.101',
+                                             '10.0.1.101'
+                                           ]
+                            },
+                'gobi' => {
+                            'OSVERSION' => '6.5',
+                            'OSNAME' => 'irix',
+                            'ADDRESS' => '10.0.0.102'
+                          },
+                'kalahari' => {
+                                'OSVERSION' => '2.0.34',
+                                'OSNAME' => 'linux',
+                                'ADDRESS' => [
+                                               '10.0.0.103',
+                                               '10.0.1.103'
+                                             ]
+                              }
+              }
 };
 my $simple2 = XML::Simple->new(keyattr => [qw(NAME)]);
 my $filter = TagsToUpper->new(Handler => $simple2);
@@ -239,10 +239,10 @@ is_deeply($opt2, $Expected3, "'handler' is a synonym for 'Handler'");
 $xml = q(<opt><anon>one</anon><anon>two</anon><anon>three</anon></opt>);
 $simple = XML::Simple->new(
   DataHandler => sub {
-		   my $xs = shift;
-		   my $data = shift;
-		   return(join(',', @$data));
-		 }
+                   my $xs = shift;
+                   my $data = shift;
+                   return(join(',', @$data));
+                 }
 );
 $parser = XML::SAX::ParserFactory->parser(Handler => $simple);
 my $result = $parser->parse_string($xml);
@@ -254,10 +254,10 @@ is($result, 'one,two,three', "'DataHandler' option works");
 
 $simple = XML::Simple->new(
   datahandler => sub {
-		   my $xs = shift;
-		   my $data = shift;
-		   return(join(',', reverse(@$data)));
-		 }
+                   my $xs = shift;
+                   my $data = shift;
+                   return(join(',', reverse(@$data)));
+                 }
 );
 $parser = XML::SAX::ParserFactory->parser(Handler => $simple);
 $result = $parser->parse_string($xml);
