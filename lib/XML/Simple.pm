@@ -2638,6 +2638,11 @@ If the first parameter to C<XMLin()> is undefined, the default SearchPath
 will contain only the directory in which the script itself is located.
 Otherwise the default SearchPath will be empty.
 
+=head2 StrictMode => 1 | 0  I<# in+out seldom used>
+
+This option allows you to turn L<STRICT MODE> on or off for a particular call,
+regardless of whether it was enabled at the time XML::Simple was loaded.
+
 =head2 SuppressEmpty => 1 | '' | undef I<# in+out - handy>
 
 This option controls what C<XMLin()> should do with empty elements (no
