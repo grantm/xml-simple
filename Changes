@@ -1,4 +1,6 @@
-Revision history for Perl module XML::Simple
+Revision history for {{$dist->name}}
+
+{{$NEXT}}
 
 2.18  Aug 15 2007
       - Non-unique key attribute values now trigger a warning (or a fatal
