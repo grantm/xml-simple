@@ -6,7 +6,7 @@ XML::Simple - Easily read/write XML (esp config files)
 
 =head1 SYNOPSIS
 
-    use XML::Simple;
+    use XML::Simple qw(:strict);
 
     my $ref = XMLin([<xml file or string>] [, <options>]);
 
@@ -14,9 +14,9 @@ XML::Simple - Easily read/write XML (esp config files)
 
 Or the object oriented way:
 
-    require XML::Simple;
+    require XML::Simple qw(:strict);
 
-    my $xs = XML::Simple->new(options);
+    my $xs = XML::Simple->new([<options>]);
 
     my $ref = $xs->XMLin([<xml file or string>] [, <options>]);
 
@@ -24,11 +24,8 @@ Or the object oriented way:
 
 (or see L<"SAX SUPPORT"> for 'the SAX way').
 
-To catch common errors:
-
-    use XML::Simple qw(:strict);
-
-(see L<"STRICT MODE"> for more details).
+Note, in these examples, the square brackets are used to denote optional items
+not to imply items should be supplied in arrayrefs.
 
 =cut
 
@@ -1881,10 +1878,22 @@ sub end_document {
 
 __END__
 
+=head1 STATUS OF THIS MODULE
+
+The use of this module in new code is discouraged.  Other modules are available
+which provide more straightforward and consistent interfaces.  In particular,
+L<XML::LibXML> is highly recommended.
+
+The major problems with this module are the large number of options and the
+arbitrary ways in which these options interact - often with unexpected results.
+
+Patches with bug fixes and documentation fixes are welcome, but new features
+are unlikely to be added.
+
 =head1 QUICK START
 
 Say you have a script called B<foo> and a file of configuration options
-called B<foo.xml> containing this:
+called B<foo.xml> containing the following:
 
   <config logdir="/var/log/foo/" debugfile="/tmp/foo.debug">
     <server name="sahara" osname="solaris" osversion="2.6">
@@ -1902,14 +1911,14 @@ called B<foo.xml> containing this:
 
 The following lines of code in B<foo>:
 
-  use XML::Simple;
+  use XML::Simple qw(:strict);
 
-  my $config = XMLin();
+  my $config = XMLin(undef, KeyAttr => { server => 'name' }, ForceArray => [ 'server', 'address' ]);
 
 will 'slurp' the configuration options into the hashref $config (because no
-arguments are passed to C<XMLin()> the name and location of the XML file will
-be inferred from name and location of the script).  You can dump out the
-contents of the hashref using Data::Dumper:
+filename or XML string was passed as the first argument to C<XMLin()> the name
+and location of the XML file will be inferred from name and location of the
+script).  You can dump out the contents of the hashref using Data::Dumper:
 
   use Data::Dumper;
 
@@ -1930,7 +1939,7 @@ brevity):
           'gobi'          => {
               'osversion'     => '6.5',
               'osname'        => 'irix',
-              'address'       => '10.0.0.102'
+              'address'       => [ '10.0.0.102' ]
           },
           'kalahari'      => {
               'osversion'     => '2.0.34',
@@ -1948,7 +1957,18 @@ similarly, the second address on the server 'kalahari' could be referenced as:
 
   print $config->{server}->{kalahari}->{address}->[1];
 
-What could be simpler?  (Rhetorical).
+Note: If the mapping between the output of Data::Dumper and the print
+statements above is not obvious to you, then please refer to the 'references'
+tutorial (AKA: "Mark's very short tutorial about references") at L<perlreftut>.
+
+In this example, the C<< ForceArray >> option was used to list elements that
+might occur multiple times and should therefore be represented as arrayrefs
+(even when only one element is present).
+
+The C<< KeyAttr >> option was used to indicate that each C<< <server> >>
+element has a unique identifier in the C<< name >> attribute.  This allows you
+to index directly to a particular server record using the name as a hash key
+(as shown above).
 
 For simple requirements, that's really all there is to it.  If you want to
 store your XML in a different directory or file, or pass it in as a string or
@@ -3283,7 +3303,7 @@ XML::Parser's handler API - it is obselete).
 
 For tree-based parsing, you could choose between the 'Perlish' approach of
 L<XML::Twig> and more standards based DOM implementations - preferably one with
-XPath support.
+XPath support such as L<XML::LibXML>.
 
 
 =head1 SEE ALSO
