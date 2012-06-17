@@ -53,17 +53,17 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $PREFERRED_PARSER);
 @EXPORT_OK         = qw(xml_in xml_out);
 $PREFERRED_PARSER  = undef;
 
-my $StrictMode     = 0;
+my %StrictMode     = ();
 
 my @KnownOptIn     = qw(keyattr keeproot forcecontent contentkey noattr
                         searchpath forcearray cache suppressempty parseropts
                         grouptags nsexpand datahandler varattr variables
-                        normalisespace normalizespace valueattr);
+                        normalisespace normalizespace valueattr strictmode);
 
 my @KnownOptOut    = qw(keyattr keeproot contentkey noattr
                         rootname xmldecl outputfile noescape suppressempty
                         grouptags nsexpand handler noindent attrindent nosort
-                        valueattr numericescape);
+                        valueattr numericescape strictmode);
 
 my @DefKeyAttr     = qw(name key id);
 my $DefRootName    = qq(opt);
@@ -89,7 +89,8 @@ my %MemCopyCache   = ();
 sub import {
   # Handle the :strict tag
 
-  $StrictMode = 1 if grep(/^:strict$/, @_);
+  my($calling_package) = caller();
+  _strict_mode_for_caller(1) if grep(/^:strict$/, @_);
 
   # Pass everything else to Exporter.pm
 
@@ -110,9 +111,11 @@ sub new {
   }
 
   my %known_opt;
-  @known_opt{@KnownOptIn, @KnownOptOut} = (undef) x 100;
+  @known_opt{@KnownOptIn, @KnownOptOut} = ();
 
   my %raw_opt = @_;
+  $raw_opt{strictmode} = _strict_mode_for_caller()
+    unless exists $raw_opt{strictmode};
   my %def_opt;
   while(my($key, $val) = each %raw_opt) {
     my $lkey = lc($key);
@@ -123,6 +126,27 @@ sub new {
   my $self = { def_opt => \%def_opt };
 
   return(bless($self, $class));
+}
+
+
+##############################################################################
+# Sub: _strict_mode_for_caller()
+#
+# Gets or sets the XML::Simple :strict mode flag for the calling namespace.
+# Walks back through call stack to find the calling namespace and sets the
+# :strict mode flag for that namespace if an argument was supplied and returns
+# the flag value if not.
+#
+
+sub _strict_mode_for_caller {
+  my $set_mode = @_;
+  my $frame = 1;
+  while(my($package) = caller($frame++)) {
+    next if $package eq 'XML::Simple';
+    $StrictMode{$package} = 1 if $set_mode;
+    return $StrictMode{$package};
+  }
+  return(0);
 }
 
 
@@ -803,7 +827,7 @@ sub handle_options  {
     }
   }
   else {
-    if($StrictMode  and  $dirn eq 'in') {
+    if($opt->{strictmode}  and  $dirn eq 'in') {
       croak "No value specified for 'ForceArray' option in call to XML$dirn()";
     }
     $opt->{forcearray} = 0;
@@ -828,7 +852,7 @@ sub handle_options  {
         foreach my $el (keys(%{$opt->{keyattr}})) {
           if($opt->{keyattr}->{$el} =~ /^(\+|-)?(.*)$/) {
             $opt->{keyattr}->{$el} = [ $2, ($1 ? $1 : '') ];
-            if($StrictMode  and  $dirn eq 'in') {
+            if($opt->{strictmode}  and  $dirn eq 'in') {
               next if($opt->{forcearray} == 1);
               next if(ref($opt->{forcearray}) eq 'HASH'
                       and $opt->{forcearray}->{$el});
@@ -851,7 +875,7 @@ sub handle_options  {
     }
   }
   else  {
-    if($StrictMode) {
+    if($opt->{strictmode}) {
       croak "No value specified for 'KeyAttr' option in call to XML$dirn()";
     }
     $opt->{keyattr} = [ @DefKeyAttr ];
@@ -1293,15 +1317,17 @@ sub array_to_hash {
 # Takes a diagnostic message and does one of three things:
 # 1. dies if strict mode is enabled
 # 2. warns if warnings are enabled but strict mode is not
-# 3. ignores message and resturns silently if neither strict mode nor warnings
+# 3. ignores message and returns silently if neither strict mode nor warnings
 #    are enabled
 #
+# Option 2 looks at the global warnings variable $^W - which is not really
+# appropriate in the modern world of lexical warnings - TODO: Fix
 
 sub die_or_warn {
   my $self = shift;
   my $msg  = shift;
 
-  croak $msg if($StrictMode);
+  croak $msg if($self->{opt}->{strictmode});
   carp "Warning: $msg" if($^W);
 }
 
@@ -2406,7 +2432,7 @@ supplied.  C<XMLout()> will use the first attribute name supplied when
 'unfolding' a hash into an array.
 
 Note 1: The default value for 'KeyAttr' is ['name', 'key', 'id'].  If you do
-not want folding on input or unfolding on output you must setting this option
+not want folding on input or unfolding on output you must set this option
 to an empty list to disable the feature.
 
 Note 2: If you wish to use this option, you should also enable the
