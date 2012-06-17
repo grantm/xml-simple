@@ -2,7 +2,7 @@ package XML::Simple;
 
 =head1 NAME
 
-XML::Simple - Easy API to maintain XML (esp config files)
+XML::Simple - Easily read/write XML (esp config files)
 
 =head1 SYNOPSIS
 
