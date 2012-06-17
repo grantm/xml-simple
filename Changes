@@ -2,6 +2,16 @@ Revision history for {{$dist->name}}
 
 {{$NEXT}}
 
+2.19_01   2012-06-17 23:27:22 Pacific/Auckland
+  - Use lexical filehandles instead of old-style fileglobs (RT#77787 from
+    Quanah)
+  - Restrict scope of :strict mode to calling package (RT#41562 from Hannu
+    Aronsson)
+  - Fix POD typo (RT#45414 from Anirvan Chatterjee)
+  - Update POD to reflect best practise regarding :strict and options
+  - Change minimum Perl requirement to 5.008
+  - Switch to using Dist::Zilla for release management
+
 2.18  Aug 15 2007
   - Non-unique key attribute values now trigger a warning (or a fatal
     error in strict mode) rather than silently discarding data (patch
