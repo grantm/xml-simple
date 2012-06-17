@@ -1,10 +1,9 @@
 
 use strict;
+use warnings;
 use Test::More;
 use IO::File;
 use File::Spec;
-
-$^W = 1;
 
 
 # Initialise filenames and check they're there

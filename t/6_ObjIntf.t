@@ -1,7 +1,6 @@
 
 use strict;
-
-$^W = 1;
+use warnings;
 
 use Test::More tests => 37;
 

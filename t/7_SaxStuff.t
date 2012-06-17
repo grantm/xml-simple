@@ -1,10 +1,9 @@
 
 use strict;
+use warnings;
 use Test::More;
 use File::Spec;
 use IO::File;
-
-$^W = 1;
 
 
 BEGIN {

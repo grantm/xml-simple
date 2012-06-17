@@ -1,8 +1,7 @@
 
 use strict;
+use warnings;
 use Test::More;
-
-$^W = 1;
 
 plan tests => 44;
 
