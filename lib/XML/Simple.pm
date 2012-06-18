@@ -403,10 +403,8 @@ sub build_tree_xml_parser {
   my($tree);
   if($filename) {
     # $tree = $xp->parsefile($filename);  # Changed due to prob w/mod_perl
-    local(*XML_FILE);
-    open(XML_FILE, '<', $filename) || croak qq($filename - $!);
-    $tree = $xp->parse(*XML_FILE);
-    close(XML_FILE);
+    open(my $xfh, '<', $filename) || croak qq($filename - $!);
+    $tree = $xp->parse($xfh);
   }
   else {
     $tree = $xp->parse($$string);
@@ -632,12 +630,11 @@ sub XMLout {
       return($fh->print($xml));
     }
     else {
-      local(*OUT);
-      open(OUT, '>', "$self->{opt}->{outputfile}") ||
+      open(my $out, '>', "$self->{opt}->{outputfile}") ||
         croak "open($self->{opt}->{outputfile}): $!";
-      binmode(OUT, ':utf8') if($] >= 5.008);
-      print OUT $xml || croak "print: $!";
-      close(OUT);
+      binmode($out, ':utf8') if($] >= 5.008);
+      print $out $xml or croak "print: $!";
+      close $out or croak "close: $!";
     }
   }
   elsif($self->{opt}->{handler}) {
