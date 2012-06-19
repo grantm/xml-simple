@@ -2,6 +2,10 @@ Revision history for {{$dist->name}}
 
 {{$NEXT}}
 
+2.19_02   2012-06-19 20:33:53 Pacific/Auckland
+  - Reinstate XML::SAX::Expat dependency
+  - Fix warnings tests (broken in 2.19_01) which rely on global $^W
+
 2.19_01   2012-06-17 23:27:22 Pacific/Auckland
   - Use lexical filehandles instead of old-style fileglobs (RT#77787 from
     Quanah)
