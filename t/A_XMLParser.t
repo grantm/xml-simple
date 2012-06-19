@@ -6,6 +6,10 @@ use IO::File;
 use File::Spec;
 
 
+# The suppress-able warnings still check the global flag
+
+$^W = 1;
+
 # Initialise filenames and check they're there
 
 my $XMLFile = File::Spec->catfile('t', 'test1.xml');  # t/test1.xml
