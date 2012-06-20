@@ -1,7 +1,9 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
-  - Suppress warning from emp[ty CDATA section (RT#58359 from Juan Antonio
+
+2.20      2012-06-20 22:00:13 Pacific/Auckland
+  - Suppress warning from empty CDATA section (RT#58359 from Juan Antonio
     Navarro Pérez)
 
 2.19_02   2012-06-19 20:33:53 Pacific/Auckland
