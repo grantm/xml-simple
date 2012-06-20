@@ -1029,6 +1029,7 @@ sub collapse {
   while(@_) {
     $key = shift;
     $val = shift;
+    $val = '' if not defined $val;
 
     if(ref($val)) {
       $val = $self->collapse(@$val);
