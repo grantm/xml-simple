@@ -1007,7 +1007,7 @@ sub collapse {
 
   if(my $var = $self->{_var_values}) {
     while(my($key, $val) = each(%$attr)) {
-      $val =~ s{\$\{([\w.]+)\}}{ $self->get_var($1) }ge;
+      $val =~ s^\$\{([\w.]+)\}^ $self->get_var($1) ^ge;
       $attr->{$key} = $val;
     }
   }
@@ -1044,7 +1044,7 @@ sub collapse {
       # do variable substitutions
 
       if(my $var = $self->{_var_values}) {
-        $val =~ s{\$\{(\w+)\}}{ $self->get_var($1) }ge;
+        $val =~ s^\$\{(\w+)\}^ $self->get_var($1) ^ge;
       }
 
 
