@@ -60,7 +60,7 @@ my @KnownOptIn     = qw(keyattr keeproot forcecontent contentkey noattr
 my @KnownOptOut    = qw(keyattr keeproot contentkey noattr
                         rootname xmldecl outputfile noescape suppressempty
                         grouptags nsexpand handler noindent attrindent nosort
-                        valueattr numericescape strictmode);
+                        valueattr numericescape attrpreservespace strictmode);
 
 my @DefKeyAttr     = qw(name key id);
 my $DefRootName    = qq(opt);
@@ -1573,6 +1573,8 @@ sub value_to_xml {
             $text_content = $value;
           }
           else {
+            $value = $self->escape_attr($value, $self->{opt}->{attrpreservespace})
+              if ($self->{opt}->{attrpreservespace});
             push @result, "\n$indent " . ' ' x length($name)
               if($self->{opt}->{attrindent}  and  !$first_arg);
             push @result, ' ', $key, '="', $value , '"';
@@ -1713,6 +1715,19 @@ sub numeric_escape {
   }
   else {
     $data =~ s/([^\x00-\xFF])/'&#' . ord($1) . ';'/gse;
+  }
+
+  return $data;
+}
+
+sub escape_attr {
+  my($self, $data, $level) = @_;
+
+  if($level == 1) {
+    $data =~ s/([\x0d\x0a\x09])/'&#' . ord($1) . ';'/gse;
+  }
+  elsif ($level == 2) {
+    $data =~ s/([\x0d\x0a\x09\x20])/'&#' . ord($1) . ';'/gse;
   }
 
   return $data;
@@ -2158,6 +2173,30 @@ or you can add underscores between the words (eg: key_attr).
 
 When you are using C<XMLout()>, enable this option to have attributes printed
 one-per-line with sensible indentation rather than all on one line.
+
+=head2 AttrPreserveSpace => 0 | 1 | 2 I<# out - advanced>
+
+The XML specification requires non-escaped carriage return, linefeed,
+and tab characters in attribute values to be normalised to a space
+on input processing.  If you want to ensure that attribute values are
+preserved literally, you can set this option:
+
+=over 4
+
+=item *
+
+0 = (default) whitespace in attribute values is unmodified
+
+=item *
+
+1 = tab, carriage return, and linefeed characters are escaped numerically
+
+=item *
+
+2 = tab, carriage return, linefeed, and space characters are
+escaped numerically
+
+=back
 
 =head2 Cache => [ cache schemes ] I<# in - advanced>
 
