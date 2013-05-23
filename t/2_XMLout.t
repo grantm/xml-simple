@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Test::More;
 
-plan tests => 201;
+plan tests => 205;
 
 
 ##############################################################################
@@ -1186,6 +1186,26 @@ SKIP: {
     $ents = join ',', sort ($xml =~ m{&#(\d+);}g);
     is($ents, '8364', "Level 1 numeric escaping looks good");
 }
+
+# Try out the AttrPreserveSpace option
+
+$ref = { aaa => { s => "a\x0Ab\x0D\x0Ac\x09d e" } };
+
+$xml = XMLout($ref);   # Default: no special escaping
+my $ents = join ',', sort ($xml =~ m{&#(\d+);}g);
+is($ents, '', "No attribute whitespace escaping by default");
+
+$xml = XMLout($ref, AttrPreserveSpace => 0);
+$ents = join ',', sort ($xml =~ m{&#(\d+);}g);
+is($ents, '', "No attribute whitespace escaping: explicit");
+
+$xml = XMLout($ref, AttrPreserveSpace => 1);
+$ents = join ',', sort ($xml =~ m{&#(\d+);}g);
+is($ents, '10,10,13,9', "Level 1 attribute escaping looks good");
+
+$xml = XMLout($ref, AttrPreserveSpace => 2);
+$ents = join ',', sort ($xml =~ m{&#(\d+);}g);
+is($ents, '10,10,13,32,9', "Level 2 attribute escaping looks good");
 
 # 'Stress test' with a data structure that maps to several thousand elements.
 # Unfold elements with XMLout() and fold them up again with XMLin()
