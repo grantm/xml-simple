@@ -1568,11 +1568,12 @@ sub value_to_xml {
             $self->value_to_xml($value, $key, "$indent  ");
         }
         else {
-          $value = $self->escape_value($value) unless($self->{opt}->{noescape});
           if($key eq $self->{opt}->{contentkey}) {
+            $value = $self->escape_value($value) unless($self->{opt}->{noescape});
             $text_content = $value;
           }
           else {
+            $value = $self->escape_attr($value) unless($self->{opt}->{noescape});
             push @result, "\n$indent " . ' ' x length($name)
               if($self->{opt}->{attrindent}  and  !$first_arg);
             push @result, ' ', $key, '="', $value , '"';
@@ -1716,6 +1717,19 @@ sub numeric_escape {
   }
 
   return $data;
+}
+
+##############################################################################
+# Method: escape_attr()
+#
+# Helper routine for escaping attribute values.  Defaults to escape_value(),
+# but may be overridden by a subclass to customise behaviour.
+#
+
+sub escape_attr {
+  my $self = shift;
+
+  return $self->escape_value(@_);
 }
 
 
@@ -2881,6 +2895,12 @@ should appear in the output.
 
 Called from C<XMLout()>, takes a string and returns a copy of the string with
 XML character escaping rules applied.
+
+=item escape_attr(string)
+
+Called from C<XMLout()>, to handle attribute values.  By default, just calls
+C<escape_value()>, but you can override this method if you want attributes
+escaped differently than text content.
 
 =item numeric_escape(string)
 
