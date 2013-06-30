@@ -1351,7 +1351,7 @@ sub new_hashref {
 #
 # Arguments expected are:
 # - an XML::Simple object
-# - a hasref
+# - a hashref
 # the hashref is a former array, turned into a hash by array_to_hash because
 # of the presence of key attributes
 # at this point collapse_content avoids over-complicated structures like
@@ -1992,7 +1992,7 @@ case, you might want to read L<"WHERE TO FROM HERE?">.
 
 The XML::Simple module provides a simple API layer on top of an underlying XML
 parsing module (either XML::Parser or one of the SAX2 parser modules).  Two
-functions are exported: C<XMLin()> and C<XMLout()>.  Note: you can explicity
+functions are exported: C<XMLin()> and C<XMLout()>.  Note: you can explicitly
 request the lower case versions of the function names: C<xml_in()> and
 C<xml_out()>.
 
@@ -2467,7 +2467,7 @@ rolled up into a scalar rather than an array and therefore will not be folded
 
 =head2 KeyAttr => { list } I<# in+out - important>
 
-This alternative (and preferred) method of specifiying the key attributes
+This alternative (and preferred) method of specifying the key attributes
 allows more fine grained control over which elements are folded and on which
 attributes.  For example the option 'KeyAttr => { package => 'id' } will cause
 any package elements to be folded on the 'id' attribute.  No other elements
@@ -3230,7 +3230,7 @@ The <anon> tag can be used to form anonymous arrays:
                 ]
     }
 
-Anonymous arrays can be nested to arbirtrary levels and as a special case, if
+Anonymous arrays can be nested to arbitrary levels and as a special case, if
 the surrounding tags for an XML document contain only an anonymous array the
 arrayref will be returned directly rather than the usual hashref:
 
@@ -3296,7 +3296,7 @@ You don't need help converting between different encodings
 =back
 
 In a serious XML project, you'll probably outgrow these assumptions fairly
-quickly.  This section of the document used to offer some advice on chosing a
+quickly.  This section of the document used to offer some advice on choosing a
 more powerful option.  That advice has now grown into the 'Perl-XML FAQ'
 document which you can find at: L<http://perl-xml.sourceforge.net/faq/>
 
@@ -3304,7 +3304,7 @@ The advice in the FAQ boils down to a quick explanation of tree versus
 event based parsers and then recommends:
 
 For event based parsing, use SAX (do not set out to write any new code for
-XML::Parser's handler API - it is obselete).
+XML::Parser's handler API - it is obsolete).
 
 For tree-based parsing, you could choose between the 'Perlish' approach of
 L<XML::Twig> and more standards based DOM implementations - preferably one with
