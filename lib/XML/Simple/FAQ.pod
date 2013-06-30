@@ -170,7 +170,7 @@ directory under your Perl installation (typically C:\Perl).
 
 Is the directory where you've unpacked XML::Simple mounted from a file server
 using NFS, SMB or some other network file sharing?  If so, that may cause
-errors in the the following test scripts:
+errors in the following test scripts:
 
   3_Storable.t
   4_MemShare.t
@@ -200,7 +200,7 @@ used.
 
 Is one of the three test scripts (above) failing but you're not running on
 a network filesystem?  Are you running Win32?  If so, you may be seeing a bug
-in Win32 where writes to a file do not affect its modfication timestamp.
+in Win32 where writes to a file do not affect its modification timestamp.
 
 If none of these scenarios match your situation, please confirm you're
 running the latest version of XML::Simple and then email the output of
