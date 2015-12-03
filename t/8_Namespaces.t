@@ -122,16 +122,16 @@ $opt = {
 };
 
 $xml = XMLout($opt);
-like($xml, qr{
+like($xml, qr[
   ^\s*<opt
   (\s+{http://www.w3.org/2000/xmlns/}perl="http://www.perl.com/"
   |\s+{http://www.perl.com/}attr="value"
   |\s+bare="Beer!"){3}
   \s*>
-  \s*<{http://www.perl.com/}element\s*>data</{http://www.perl.com/}element\s*>
+  \s*<\{http://www.perl.com/\}element\s*>data</\{http://www.perl.com/\}element\s*>
   \s*</opt>
   \s*$
-}sx, 'clarkian names not converted to qnames on output by default');
+]sx, 'clarkian names not converted to qnames on output by default');
 
 
 # Confirm nsexpand option works on output
