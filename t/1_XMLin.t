@@ -18,12 +18,11 @@ unless(-e $XMLFile) {
   plan skip_all => 'Test data missing';
 }
 
-plan tests => 131;
+plan tests => 132;
 
 
 my $last_warning = '';
 
-$@ = '';
 eval "use XML::Simple;";
 is($@, '', 'Module compiled OK');
 my $version = 'unknown';
@@ -485,7 +484,6 @@ is_deeply($opt, {
 
 # Try parsing a named external file
 
-$@ = '';
 $opt = eval{ XMLin($XMLFile); };
 is($@, '', "XMLin didn't choke on named external file");
 is_deeply($opt, {
@@ -495,7 +493,6 @@ is_deeply($opt, {
 
 # Try parsing default external file (scriptname.xml in script directory)
 
-$@ = '';
 $opt = eval { XMLin(); };
 is($@, '', "XMLin didn't choke on un-named (default) external file");
 is_deeply($opt, {
@@ -505,7 +502,6 @@ is_deeply($opt, {
 
 # Try parsing named file in a directory in the searchpath
 
-$@ = '';
 $opt = eval {
   XMLin('test2.xml', searchpath => [
     'dir1', 'dir2', File::Spec->catdir('t', 'subdir'), @cont_key
@@ -520,7 +516,6 @@ is_deeply($opt, {
 
 # Ensure we get expected result if file does not exist
 
-$@ = '';
 $opt = undef;
 $opt = eval {
   XMLin('bogusfile.xml', searchpath => 't' ); # should 'die'
@@ -531,7 +526,6 @@ like($@, qr/Could not find bogusfile.xml in/, 'with the expected message');
 
 # same again, but with no searchpath
 
-$@ = '';
 $opt = undef;
 $opt = eval { XMLin('bogusfile.xml'); };
 is($opt, undef, 'nonexistant file not found in current directory');
@@ -540,17 +534,16 @@ like($@, qr/File does not exist: bogusfile.xml/, 'with the expected message');
 
 # Confirm searchpath is ignored if filename includes directory component
 
-$@ = '';
 $opt = undef;
 $opt = eval {
   XMLin(File::Spec->catfile('subdir', 'test2.xml'), searchpath => 't' );
 };
 is($opt, undef, 'search path ignored when pathname supplied');
+like($@, qr/Could not find/, 'failed with expected message');
 
 
 # Try parsing from an IO::Handle
 
-$@ = '';
 my $fh = new IO::File;
 $XMLFile = File::Spec->catfile('t', '1_XMLin.xml');  # t/1_XMLin.xml
 eval {
@@ -564,7 +557,6 @@ is($opt->{location}, 't/1_XMLin.xml', 'and it parsed the right file');
 # Try parsing from STDIN
 
 close(STDIN);
-$@ = '';
 eval {
   open(STDIN, $XMLFile) || die "$!";
   $opt = XMLin('-');
@@ -1219,13 +1211,11 @@ is_deeply($opt, {
 
 # Confirm only a hash is acceptable to grouptags and variables
 
-$@ = '';
 $_ = eval { $opt = XMLin($xml, grouptags  => [ 'dir' ]); };
 ok(!defined($_), 'grouptags requires a hash');
 like($@, qr/Illegal value for 'GroupTags' option - expected a hashref/,
 'with correct error message');
 
-$@ = '';
 $_ = eval { $opt = XMLin($xml, variables  => [ 'dir' ]); };
 ok(!defined($_), 'variables requires a hash');
 like($@, qr/Illegal value for 'Variables' option - expected a hashref/,
@@ -1253,12 +1243,10 @@ is_deeply($opt, {
 
 # Test option error handling
 
-$@='';
 $_ = eval { XMLin('<x y="z" />', rootname => 'fred') }; # not valid for XMLin()
 is($_, undef, 'invalid options are trapped');
 like($@, qr/Unrecognised option:/, 'with correct error message');
 
-$@='';
 $_ = eval { XMLin('<x y="z" />', 'searchpath') };
 is($_, undef, 'invalid number of options are trapped');
 like($@, qr/Options must be name=>value pairs \(odd number supplied\)/,

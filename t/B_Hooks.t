@@ -12,7 +12,6 @@ SKIP: {
 
   skip "Tie::IxHash not installed", 3 if $@;
 
-  $@ = '';
   eval <<'EOF';
 
     package SimpleOrder;

@@ -519,7 +519,7 @@ unlink($TestFile);
 ok(!-e $TestFile, 'output file does not exist');
 
 $xml = XMLout($hashref1);
-eval { XMLout($hashref1, outputfile => $TestFile); };
+XMLout($hashref1, outputfile => $TestFile);
 ok(-e $TestFile, 'created xml output file');
 is(ReadFile($TestFile), $xml, 'Contents match expectations');
 unlink($TestFile);
@@ -528,11 +528,9 @@ unlink($TestFile);
 # Test output to an IO handle
 
 ok(!-e $TestFile);
-eval {
-  open my $fh, '>', $TestFile or die "$!";
-  XMLout($hashref1, outputfile => $fh);
-  $fh->close();
-};
+open my $fh, '>', $TestFile or die "$!";
+XMLout($hashref1, outputfile => $fh);
+$fh->close();
 ok(-e $TestFile, 'create XML output file via IO::File');
 is(ReadFile($TestFile), $xml, 'Contents match expectations');
 unlink($TestFile);
@@ -759,15 +757,13 @@ like($_, qr{^\s*<opt\s+one="1">text</opt>\s*$}s, 'even with "-" prefix');
   $^W = 1;
   my $warn = '';
   local $SIG{__WARN__} = sub { $warn = $_[0] };
-  $_ = eval {
-    $ref = {
-      column => [
-        { name => 'title',   content => 'A Title' },
-        { name => 'sponsor', content => undef },
-      ],
-    };
-    XMLout($ref, suppress_empty => undef, content_key => 'content');
+  $ref = {
+    column => [
+      { name => 'title',   content => 'A Title' },
+      { name => 'sponsor', content => undef },
+    ],
   };
+  $_ = XMLout($ref, suppress_empty => undef, content_key => 'content');
   ok(!$warn,  'no warnings with suppress_empty => undef');
   like($_, qr{^<(\w+)>
       \s*<column\s+name="title"\s*>A\sTitle</column>
