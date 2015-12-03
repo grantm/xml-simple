@@ -3,6 +3,8 @@ use strict;
 use warnings;
 use Test::More;
 
+use FileHandle;   # Workaround for test failures on RHEL
+
 plan tests => 201;
 
 
