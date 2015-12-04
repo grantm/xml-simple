@@ -2233,7 +2233,7 @@ file may appear to be ignored.
 
 =head2 ContentKey => 'keyname' I<# in+out - seldom used>
 
-When text content is parsed to a hash value, this option let's you specify a
+When text content is parsed to a hash value, this option lets you specify a
 name for the hash key to override the default 'content'.  So for example:
 
   XMLin('<opt one="1">Text</opt>', ContentKey => 'text')
