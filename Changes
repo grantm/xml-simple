@@ -2,6 +2,21 @@ Revision history for {{$dist->name}}
 
 {{$NEXT}}
 
+2.21      2015-12-04 16:33:49+13:00 Pacific/Auckland
+  - Improved diagnostics - xml_in() will now catch parse exceptions and add
+    caller information via Carp::croak
+  - Switch to use lexical warnings (suppress with either 'no warnings;' or
+    'no warnings "XML::Simple";', rather than $^W = 0)
+  - POD fixes (from David Steinbrunner)
+  - Regex escaping fixes for Perl 5.22+ (from Kent Fredric)
+  - Add workaround for test failures on RHEL/CentOS 6.5 (RT#102115 from
+    Chris Drake, workaround from Tim Bunce)
+  - Remove some 'eval' calls from test suite which could mask root cause of
+    test failures
+  - Make each test script use unique filenames to allow tests to be run in
+    parallel (RT#101362 from Karen Etheridge & Kent Fredric)
+  - POD update: mention XML::Twig in 'STATUS' section (RT#79228 from Matt Trout)
+
 2.20      2012-06-20 22:00:13 Pacific/Auckland
   - Suppress warning from empty CDATA section (RT#58359 from Juan Antonio
     Navarro Pérez)
