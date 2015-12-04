@@ -646,7 +646,6 @@ like($_, qr{^\s*<(\w+)\s*>\s*<nnn>\s*<nnn>\s*</\1\s*>\s*$}, 'document OK');
 # Check undefined values generate warnings
 
 {
-  local($^W) = 1;
   my $warn = '';
   local $SIG{__WARN__} = sub { $warn = $_[0] };
   $ref = { 'one' => 1, 'two' => undef };
@@ -656,10 +655,15 @@ like($_, qr{^\s*<(\w+)\s*>\s*<nnn>\s*<nnn>\s*</\1\s*>\s*$}, 'document OK');
   like($warn, qr/Use of uninitialized value/,
     'caught warning re uninitialised value');
   like($_, $expect, 'undef maps to any empty attribute by default');
+}
 
+{
   # unless warnings are disabled
-  $^W = 0;
-  $warn = '';
+  no warnings;
+  my $warn = '';
+  local $SIG{__WARN__} = sub { $warn = $_[0] };
+  my $expect = qr/^<\w+(\s+one="1"|\s+two=""){2}/;
+
   $_ = XMLout($ref);
   is($warn, '', 'no warning re uninitialised value if warnings off');
   like($_, $expect, 'undef still maps to any empty attribute');
@@ -754,7 +758,6 @@ like($_, qr{^\s*<opt\s+one="1">text</opt>\s*$}s, 'even with "-" prefix');
 # Confirm content key works with undef values (and no warnings)
 
 {
-  $^W = 1;
   my $warn = '';
   local $SIG{__WARN__} = sub { $warn = $_[0] };
   $ref = {

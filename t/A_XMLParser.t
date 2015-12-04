@@ -6,10 +6,6 @@ use IO::File;
 use File::Spec;
 
 
-# The suppress-able warnings still check the global flag
-
-$^W = 1;
-
 # Initialise filenames and check they're there
 
 my $XMLFile = File::Spec->catfile('t', 'test1.xml');  # t/test1.xml
@@ -68,10 +64,10 @@ is_deeply($opt, {y => 'z'}, "Parsing was successful");
 # Check it doesn't happen if warnings disabled
 
 {
+  no warnings;
   local($SIG{__WARN__}) = \&warn_handler;
 
   $last_warning = '';
-  local($^W) = 0;
   $opt = XMLin('<x y="z" />', ParserOpts => [ ParseParamEnt => 1 ]);
 }
 

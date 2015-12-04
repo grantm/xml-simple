@@ -38,6 +38,8 @@ not to imply items should be supplied in arrayrefs.
 # Load essentials here, other modules loaded on demand later
 
 use strict;
+use warnings;
+use warnings::register;
 use Carp;
 require Exporter;
 
@@ -790,7 +792,7 @@ sub handle_options  {
   }
 
   if(exists($opt->{parseropts})) {
-    if($^W) {
+    if(warnings::enabled()) {
       carp "Warning: " .
            "'ParserOpts' is deprecated, contact the author if you need it";
     }
@@ -1324,15 +1326,15 @@ sub array_to_hash {
 # 3. ignores message and returns silently if neither strict mode nor warnings
 #    are enabled
 #
-# Option 2 looks at the global warnings variable $^W - which is not really
-# appropriate in the modern world of lexical warnings - TODO: Fix
 
 sub die_or_warn {
   my $self = shift;
   my $msg  = shift;
 
   croak $msg if($self->{opt}->{strictmode});
-  carp "Warning: $msg" if($^W);
+  if(warnings::enabled()) {
+    carp "Warning: $msg";
+  }
 }
 
 
@@ -1550,7 +1552,7 @@ sub value_to_xml {
           unless(exists($self->{opt}->{suppressempty})
              and !defined($self->{opt}->{suppressempty})
           ) {
-            carp 'Use of uninitialized value' if($^W);
+            carp 'Use of uninitialized value' if warnings::enabled();
           }
           if($key eq $self->{opt}->{contentkey}) {
             $text_content = '';
@@ -2484,7 +2486,8 @@ which have an 'id' attribute will be folded at all.
 Note: C<XMLin()> will generate a warning (or a fatal error in L<"STRICT MODE">)
 if this syntax is used and an element which does not have the specified key
 attribute is encountered (eg: a 'package' element without an 'id' attribute, to
-use the example above).  Warnings will only be generated if B<-w> is in force.
+use the example above).  Warnings can be suppressed with the lexical
+C<no warnings;> pragma or C<no warnings 'XML::Simple';>.
 
 Two further variations are made possible by prefixing a '+' or a '-' character
 to the attribute name:
@@ -2949,8 +2952,8 @@ KeyAttr hash.
 
 Data error - KeyAttr is set to say { part => 'partnum' } but the XML contains
 one or more E<lt>partE<gt> elements without a 'partnum' attribute (or nested
-element).  Note: if strict mode is not set but -w is, this condition triggers a
-warning.
+element).  Note: if strict mode is not set but C<use warnings;> is in force,
+this condition triggers a warning.
 
 =item *
 

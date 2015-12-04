@@ -5,10 +5,7 @@ use Test::More;
 use IO::File;
 use File::Spec;
 
-
-# The suppress-able warnings still check the global flag
-
-$^W = 1;
+use XML::Simple;
 
 # Initialise filenames and check they're there
 
@@ -23,7 +20,6 @@ plan tests => 132;
 
 my $last_warning = '';
 
-eval "use XML::Simple;";
 is($@, '', 'Module compiled OK');
 my $version = 'unknown';
 if(open my $chg, '<Changes') {
@@ -390,13 +386,14 @@ $target = {
   );
 
   $last_warning = '';
-  local($^W) = 0;
-  $opt = XMLin($xml, keyattr => { item => 'name' }, @cont_key);
-  is_deeply($opt, $target, "did not fold on specific key with non-scalar value");
-  is($last_warning, '', 'no warning issued (as expected)');
+  {
+    no warnings 'XML::Simple';
+    $opt = XMLin($xml, keyattr => { item => 'name' }, @cont_key);
+    is_deeply($opt, $target, "did not fold on specific key with non-scalar value");
+    is($last_warning, '', 'no warning issued (as expected)');
+  }
 
   $last_warning = '';
-  $^W = 1;
   my $xitems = q(<opt>
     <item name="color">red</item>
     <item name="mass">heavy</item>
@@ -415,13 +412,14 @@ $target = {
     'expected warning issued');
 
   $last_warning = '';
-  $^W = 0;
-  $opt = XMLin($xitems, keyattr => { item => 'name' }, @cont_key);
-  is_deeply($opt, $items, "same again");
-  is($last_warning, '', 'but with no warning this time');
+  {
+    no warnings;
+    $opt = XMLin($xitems, keyattr => { item => 'name' }, @cont_key);
+    is_deeply($opt, $items, "same again");
+    is($last_warning, '', 'but with no warning this time');
+  }
 
   $last_warning = '';
-  $^W = 1;
   $xitems = q(<opt>
     <item name="color">red</item>
     <item name="mass">heavy</item>
@@ -447,10 +445,12 @@ $target = {
     'expected warning issued');
 
   $last_warning = '';
-  $^W = 0;
-  $opt = XMLin($xitems, keyattr => { item => 'name' }, @cont_key);
-  is_deeply($opt, $items, "same again");
-  is($last_warning, '', 'but with no warning this time');
+  {
+    no warnings;
+    $opt = XMLin($xitems, keyattr => { item => 'name' }, @cont_key);
+    is_deeply($opt, $items, "same again");
+    is($last_warning, '', 'but with no warning this time');
+  }
 }
 
 
