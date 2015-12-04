@@ -1714,8 +1714,6 @@ sub escape_value {
 sub numeric_escape {
   my($self, $data, $level) = @_;
 
-  use utf8; # required for 5.6
-
   if($self->{opt}->{numericescape} eq '2') {
     $data =~ s/([^\x00-\x7F])/'&#' . ord($1) . ';'/gse;
   }
