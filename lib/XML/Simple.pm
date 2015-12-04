@@ -41,6 +41,7 @@ use strict;
 use warnings;
 use warnings::register;
 use Carp;
+use Scalar::Util qw();
 require Exporter;
 
 
@@ -640,7 +641,7 @@ sub XMLout {
 
   # Encode the hashref and write to file if necessary
 
-  $self->{_ancestors} = [];
+  $self->{_ancestors} = {};
   my $xml = $self->value_to_xml($ref, $self->{opt}->{rootname}, '');
   delete $self->{_ancestors};
 
@@ -1427,10 +1428,10 @@ sub value_to_xml {
 
   # Convert to XML
 
-  if(ref($ref)) {
+  if(my $refaddr = Scalar::Util::refaddr($ref)) {
     croak "circular data structures not supported"
-      if(grep($_ == $ref, @{$self->{_ancestors}}));
-    push @{$self->{_ancestors}}, $ref;
+      if $self->{_ancestors}->{$refaddr};
+    $self->{_ancestors}->{$refaddr} = 1;
   }
   else {
     if($named) {
@@ -1648,7 +1649,9 @@ sub value_to_xml {
   }
 
 
-  pop @{$self->{_ancestors}} if(ref($ref));
+  if(my $refaddr = Scalar::Util::refaddr($ref)) {
+    delete $self->{_ancestors}->{$refaddr};
+  }
 
   return(join('', @result));
 }
