@@ -17,8 +17,8 @@ unless(UNIVERSAL::can(Storable => 'lock_nstore')) {
 # Initialise filenames and check they're there
 
 my $SrcFile   = File::Spec->catfile('t', 'desertnet.src');
-my $XMLFile   = File::Spec->catfile('t', 'desertnet.xml');
-my $CacheFile = File::Spec->catfile('t', 'desertnet.stor');
+my $XMLFile   = File::Spec->catfile('t', 'desertnet3.xml');
+my $CacheFile = File::Spec->catfile('t', 'desertnet3.stor');
 
 unless(-e $SrcFile) {
   plan skip_all => 'test data missing';

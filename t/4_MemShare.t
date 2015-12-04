@@ -8,7 +8,7 @@ use File::Spec;
 # Initialise filenames and check they're there
 
 my $SrcFile   = File::Spec->catfile('t', 'desertnet.src');
-my $XMLFile   = File::Spec->catfile('t', 'desertnet.xml');
+my $XMLFile   = File::Spec->catfile('t', 'desertnet4.xml');
 
 unless(-e $SrcFile) {
   plan skip_all => 'test data missing';
@@ -146,6 +146,7 @@ my $opt2 = XMLin($XMLFile, cache => 'memshare');
 
 is($opt2->{three}, 3, 'cache was modified');
 
+unlink($XMLFile);
 
 exit(0);
 

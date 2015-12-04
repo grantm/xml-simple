@@ -20,7 +20,7 @@ use TagsToUpper;
 # Initialise filenames and check they're there
 
 my $SrcFile   = File::Spec->catfile('t', 'desertnet.src');
-my $XMLFile   = File::Spec->catfile('t', 'desertnet.xml');
+my $XMLFile   = File::Spec->catfile('t', 'desertnet7.xml');
 my $CacheFile = File::Spec->catfile('t', 'desertnet.stor');
 
 unless(-e $SrcFile) {

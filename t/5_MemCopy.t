@@ -13,7 +13,7 @@ unless($INC{'Storable.pm'}) {
 # Initialise filenames and check they're there
 
 my $SrcFile   = File::Spec->catfile('t', 'desertnet.src');
-my $XMLFile   = File::Spec->catfile('t', 'desertnet.xml');
+my $XMLFile   = File::Spec->catfile('t', 'desertnet5.xml');
 
 unless(-e $SrcFile) {
   plan skip_all => 'test data missing';
