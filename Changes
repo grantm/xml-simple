@@ -2,6 +2,16 @@ Revision history for {{$dist->name}}
 
 {{$NEXT}}
 
+2.22      2015-12-05 11:08:20+13:00 Pacific/Auckland
+  - POD fix in link to package XML::SAX::ParseFactory (from Mohammad S Anwar)
+  - allow subclass to override attribute escaping (from Christopher Masto)
+  - POD fix adding NAME section to FAQ (RT#110080 from Bart Martens & gregor
+    herrmann of the Debian project)
+  - POD typo fix (RT#110082 from gregor herrmann of the Debian project)
+  - fix reference comparison operator used in checking for circular data
+    structures (RT#89553 from Laurent Dami)
+  - add better diagnostics from file handling code in test suite
+
 2.21      2015-12-04 16:33:49+13:00 Pacific/Auckland
   - Improved diagnostics - xml_in() will now catch parse exceptions and add
     caller information via Carp::croak
