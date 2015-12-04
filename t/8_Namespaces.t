@@ -21,35 +21,6 @@ if($XML::NamespaceSupport::VERSION < 1.04) {
 
 plan tests => 8;
 
-
-##############################################################################
-#                   S U P P O R T   R O U T I N E S
-##############################################################################
-
-##############################################################################
-# Copy a file
-#
-
-sub CopyFile {
-  my($Src, $Dst) = @_;
-
-  open(IN, $Src) || return(undef);
-  local($/) = undef;
-  my $Data = <IN>;
-  close(IN);
-
-  open(OUT, ">$Dst") || return(undef);
-  print OUT $Data;
-  close(OUT);
-
-  return(1);
-}
-
-
-##############################################################################
-#                      T E S T   R O U T I N E S
-##############################################################################
-
 use XML::Simple;
 
 # Force default behaviour of using SAX parser if it is available (which it

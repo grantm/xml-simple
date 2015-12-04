@@ -27,6 +27,21 @@ unless(-e $SrcFile) {
   plan skip_all => 'test data missing';
 }
 
+# Make sure we can write to the filesystem and check it uses the same
+# clock as the machine we're running on.
+
+my $t0 = time();
+unless(open(XML, '>', $XMLFile)) {
+  plan skip_all => "can't create test file '$XMLFile': $!";
+}
+close(XML);
+my $t1 = (stat($XMLFile))[9];
+my $t2 = time();
+
+if($t1 < $t0  or  $t2 < $t1) {
+  plan skip_all => 'time moved backwards!'
+}
+
 
 plan tests => 14;
 
@@ -40,16 +55,16 @@ plan tests => 14;
 #
 
 sub CopyFile {
-  my($Src, $Dst) = @_;
+  my($src, $dst) = @_;
 
-  open(IN, $Src) || return(undef);
+  open(my $in, $src) or die "open(<$src): $!";
   local($/) = undef;
-  my $Data = <IN>;
-  close(IN);
+  my $data = <$in>;
+  close($in);
 
-  open(OUT, ">$Dst") || return(undef);
-  print OUT $Data;
-  close(OUT);
+  open(my $out, '>', $dst) or die "open(>$dst): $!";
+  print $out $data;
+  close($out);
 
   return(1);
 }

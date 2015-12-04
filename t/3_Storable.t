@@ -28,8 +28,8 @@ unless(-e $SrcFile) {
 # clock as the machine we're running on.
 
 my $t0 = time();
-unless(open(XML, ">$XMLFile")) {
-  plan skip_all => "can't create test file: $!";
+unless(open(XML, '>', $XMLFile)) {
+  plan skip_all => "can't create test file '$XMLFile': $!";
 }
 close(XML);
 my $t1 = (stat($XMLFile))[9];
@@ -51,16 +51,16 @@ plan tests => 23;
 #
 
 sub CopyFile {
-  my($Src, $Dst) = @_;
+  my($src, $dst) = @_;
 
-  open(IN, $Src) || return(undef);
+  open(my $in, $src) or die "open(<$src): $!";
   local($/) = undef;
-  my $Data = <IN>;
-  close(IN);
+  my $data = <$in>;
+  close($in);
 
-  open(OUT, ">$Dst") || return(undef);
-  print OUT $Data;
-  close(OUT);
+  open(my $out, '>', $dst) or die "open(>$dst): $!";
+  print $out $data;
+  close($out);
 
   return(1);
 }

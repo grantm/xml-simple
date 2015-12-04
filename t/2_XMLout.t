@@ -528,9 +528,9 @@ unlink($TestFile);
 # Test output to an IO handle
 
 ok(!-e $TestFile);
-open my $fh, '>', $TestFile or die "$!";
+open my $fh, '>', $TestFile or die "open(>$TestFile): $!";
 XMLout($hashref1, outputfile => $fh);
-$fh->close();
+$fh->close() or die "close() failed: $!";
 ok(-e $TestFile, 'create XML output file via IO::File');
 is(ReadFile($TestFile), $xml, 'Contents match expectations');
 unlink($TestFile);
