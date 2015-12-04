@@ -3097,7 +3097,7 @@ installed).
 =item *
 
 If the 'preferred parser' is set to some other value, then it is assumed to be
-the name of a SAX parser module and is passed to L<XML::SAX::ParserFactory>
+the name of a SAX parser module and is passed to L<XML::SAX::ParserFactory>.
 If L<XML::SAX> is not installed, or the requested parser module is not
 installed, then C<XMLin()> will die.
 
