@@ -323,7 +323,10 @@ sub default_config_file {
 sub build_simple_tree {
   my $self = shift;
 
-  my $tree = $self->build_tree(@_);
+  my $tree = eval {
+    $self->build_tree(@_);
+  };
+  Carp::croak("$@XML::Simple called") if $@;
 
   return $self->{opt}->{keeproot}
          ? $self->collapse({}, @$tree)
