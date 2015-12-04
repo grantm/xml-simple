@@ -4,8 +4,9 @@ package XML::Simple::FAQ;
 
 __END__
 
-=head1 Frequently Asked Questions about XML::Simple
+=head1 NAME
 
+XML::Simple::FAQ - Frequently Asked Questions about XML::Simple
 
 =head1 Basics
 
