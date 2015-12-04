@@ -2,9 +2,12 @@ package XML::Simple;
 
 =head1 NAME
 
-XML::Simple - Easily read/write XML (esp config files)
+XML::Simple - An API for simple XML files
 
 =head1 SYNOPSIS
+
+You really don't want to use this module in new code.  If you ignore this
+warning and use it anyway, the C<qw(:strict)> mode will save you a little pain.
 
     use XML::Simple qw(:strict);
 
@@ -1890,10 +1893,12 @@ __END__
 
 The use of this module in new code is discouraged.  Other modules are available
 which provide more straightforward and consistent interfaces.  In particular,
-L<XML::LibXML> is highly recommended.
+L<XML::LibXML> is highly recommended and L<XML::Twig> is an excellent
+alternative.
 
-The major problems with this module are the large number of options and the
-arbitrary ways in which these options interact - often with unexpected results.
+The major problems with this module are the large number of options (some of
+which have unfortunate defaults) and the arbitrary ways in which these options
+interact - often producing unexpected results.
 
 Patches with bug fixes and documentation fixes are welcome, but new features
 are unlikely to be added.
