@@ -1428,10 +1428,11 @@ sub value_to_xml {
 
   # Convert to XML
 
-  if(my $refaddr = Scalar::Util::refaddr($ref)) {
+  my $refaddr = Scalar::Util::refaddr($ref);
+  if($refaddr) {
     croak "circular data structures not supported"
-      if $self->{_ancestors}->{$refaddr};
-    $self->{_ancestors}->{$refaddr} = 1;
+      if $self->{ancestors}->{$refaddr};
+    $self->{ancestors}->{$refaddr} = $ref;  # keep ref alive until we delete it
   }
   else {
     if($named) {
@@ -1649,9 +1650,7 @@ sub value_to_xml {
   }
 
 
-  if(my $refaddr = Scalar::Util::refaddr($ref)) {
-    delete $self->{_ancestors}->{$refaddr};
-  }
+  delete $self->{ancestors}->{$refaddr};
 
   return(join('', @result));
 }
