@@ -2,6 +2,12 @@ Revision history for {{$dist->name}}
 
 {{$NEXT}}
 
+2.24      2017-04-17 16:12:00+12:00 Pacific/Auckland
+  - fix typo in last commit with mistakenly removed some underscores
+  - don't initialise $XML::Simple::PREFERRED_PARSER to undef as a caller may
+    have already set it before loading XML::Simple and if not, it would have
+    defaulted to undef anyway (RT#118205 from Slaven Rezić)
+
 2.23      2017-04-17 15:49:14+12:00 Pacific/Auckland
   - another fix to the logic for detecting circular references (RT#114120 from
     Matthias Pitzl, also report from Erland Sommarskog)
