@@ -2,6 +2,10 @@ Revision history for {{$dist->name}}
 
 {{$NEXT}}
 
+2.23      2017-04-17 15:49:14+12:00 Pacific/Auckland
+  - another fix to the logic for detecting circular references (RT#114120 from
+    Matthias Pitzl, also report from Erland Sommarskog)
+
 2.22      2015-12-05 11:08:20+13:00 Pacific/Auckland
   - POD fix in link to package XML::SAX::ParseFactory (from Mohammad S Anwar)
   - allow subclass to override attribute escaping (from Christopher Masto)
