@@ -240,9 +240,9 @@ sub parse_file {
   # Check cache for previous parse
 
   if($self->{opt}->{cache}) {
-    foreach my $scheme (@{$self->{opt}->{cache}}) {
-      my $method = 'cache_read_' . $scheme;
-      my $opt = $self->$method($filename);
+    foreach my $c (@{$self->{opt}->{cache}}) {
+      my $method = 'cache_read_' . $self->determine_cache_scheme($c);
+      my $opt = $self->$method($filename, $c);
       return($opt) if($opt);
     }
   }
@@ -250,8 +250,9 @@ sub parse_file {
   my $ref = $self->build_simple_tree($filename, undef);
 
   if($self->{opt}->{cache}) {
-    my $method = 'cache_write_' . $self->{opt}->{cache}->[0];
-    $self->$method($ref, $filename);
+    my $c = $self->{opt}->{cache}->[0];
+    my $method = 'cache_write_' . $self->determine_cache_scheme($c);
+    $self->$method($ref, $filename, $c);
   }
 
   return $ref;
@@ -439,6 +440,64 @@ sub build_tree_xml_parser {
   }
 
   return($tree);
+}
+
+
+##############################################################################
+# Method: cache_write_chi()
+#
+# Write the cache data to the CHI object
+#
+# Unlike other cache_write_* methods, this stores the options used by
+# in the CHI (or compatable-enough) object (so if they change, we don't use
+# them by mistake)
+#
+
+sub cache_write_chi {
+  my($self, $data, $filename, $chi) = @_;
+
+  require Storable;           # We didn't need it until now
+
+  my $options = $self->freeze_options($self->{opt});
+
+  # Format
+  #   [ <version>, <store time>, <parsed XML> ]
+  my $serialized = Storable::freeze([ 0, time(), $options, $data ]);
+
+  $chi->set($filename, $serialized);
+}
+
+
+##############################################################################
+# Method: cache_read_chi()
+#
+# Read the cache data via a CHI object
+#
+
+sub cache_read_chi {
+  my($self, $filename, $chi) = @_;
+
+  require Storable;           # We didn't need it until now
+  
+  my $val = $chi->get($filename);
+  return unless(defined($val)); 
+
+  $val = Storable::thaw($val);
+
+  if ($val->[0] != 0) {
+    $self->die_or_warn("Cached version (" . $val->[0] . ") is unknown");
+    return undef;
+  }
+
+  return unless($val->[1] > (stat($filename))[9]);
+
+  my $options = $self->freeze_options($self->{opt});
+  if ($val->[2] ne $options) {
+    $self->die_or_warn("Cached parsing of $filename uses different options");
+    return undef;
+  }
+
+  return $val->[3];
 }
 
 
@@ -779,12 +838,13 @@ sub handle_options  {
     $opt->{searchpath} = [ ];
   }
 
-  if($opt->{cache}  and !ref($opt->{cache})) {
-    $opt->{cache} = [ $opt->{cache} ];
-  }
   if($opt->{cache}) {
-    $_ = lc($_) foreach (@{$opt->{cache}});
-    foreach my $scheme (@{$opt->{cache}}) {
+    if (defined($self->determine_cache_scheme($opt->{cache}))) {
+      $opt->{cache} = [ $opt->{cache} ];
+    }
+
+    foreach my $c (@{$opt->{cache}}) {
+      my $scheme = $self->determine_cache_scheme($c);
       my $method = 'cache_read_' . $scheme;
       croak "Unsupported caching scheme: $scheme"
         unless($self->can($method));
@@ -1337,6 +1397,76 @@ sub die_or_warn {
   }
 }
 
+##############################################################################
+# Method: freeze_options()
+#
+# Returns a frozen set of options - used to compare the parsing options
+# used to create a cache entry with the currently used parsing options.
+#
+
+sub freeze_options {
+  my $self = shift;
+  my $opts = shift;
+
+  require Storable;  # We didn't need it until now
+
+  # We don't want hashes re-ordered
+  local $Storable::cannonical = 1;
+
+  my (%uninteresting) = (
+    cache       => 1,
+    datahandler => 1,
+    strictmode  => 1
+  );
+
+  my $out = [];
+  foreach my $op (sort keys %$opts) {
+    if (exists($uninteresting{$op})) { next; }
+    push @$out, [ $op, $opts->{$op} ];
+  }
+  return Storable::freeze($out);
+}
+
+##############################################################################
+# Method: is_chi()
+#
+# Returns true if passed an object reference that implement's get() and
+# set().
+#
+
+sub is_chi {
+  my $self = shift;
+
+  if (! ref($self))                   { return undef; }
+  if (! UNIVERSAL::can($self, 'get')) { return undef; }
+  if (! UNIVERSAL::can($self, 'set')) { return undef; }
+
+  return 1;
+}
+
+##############################################################################
+# Method: determine_cache_scheme()
+#
+# Returns the scheme represented by the cache type or cache object.
+#
+
+sub determine_cache_scheme {
+  my $self = shift;
+  my $obj  = shift;
+
+  # Undef doesn't have a valid scheme
+  if (!defined($obj)) { return undef; }
+
+  # Handle non-ref strings
+  if (! ref($obj)) { return lc($obj); }
+
+  # Is it a CHI object?
+  if (! UNIVERSAL::can($obj, 'get')) { return undef; }
+  if (! UNIVERSAL::can($obj, 'set')) { return undef; }
+
+  # We know it's a CHI object
+  return 'chi';
+}
 
 ##############################################################################
 # Method: new_hashref()
@@ -2182,11 +2312,23 @@ or you can add underscores between the words (eg: key_attr).
 When you are using C<XMLout()>, enable this option to have attributes printed
 one-per-line with sensible indentation rather than all on one line.
 
-=head2 Cache => [ cache schemes ] I<# in - advanced>
+=head2 Cache => [ cache schemes / objects ] I<# in - advanced>
 
 Because loading the B<XML::Parser> module and parsing an XML file can consume a
 significant number of CPU cycles, it is often desirable to cache the output of
 C<XMLin()> for later reuse.
+
+Note: It is important that the cache, particularly when using the C<storable>
+and object-based caches which can persist between invocations, are not shared
+for invocations of XML parsing that use different options.  For instance, if
+you cache the result of XML produced with C<suppressempty> set, and later
+try to read the same XML file with a different set of options that does not
+include C<suppressempty>, using the same cache used to cache the previous
+parsing, you will get the data from parsing with the option set - which is
+almost certainly a problem for your code.  For all cache schemes other than
+the C<CHI>-compatible/object-based scheme, this will be done silently, with
+no warnings or checking.  The object-basedscheme checks that the options used
+are substantially the same - see below for details.
 
 When parsing from a named file, B<XML::Simple> supports a number of caching
 schemes.  The 'Cache' option may be used to specify one or more schemes (using
@@ -2197,6 +2339,24 @@ used to save a copy of the results.  The following cache schemes have been
 implemented:
 
 =over 4
+
+=item object-based (CHI-compatible)
+
+This scheme uses a user-defined object reference. This reference can be
+the return value of the L<CHI> constructor or any other object that
+implements C<get()> and C<set()> in a way compatible with L<CHI>.
+The C<get()> method will always be called with one argument (the hash key,
+which will be the filename of the XML file) while the C<set()> method will
+be called with two arguments (the filename of the XML file and
+a L<Storable> "frozen" string representing the cached data.
+
+Unlike all other schemes described, if the options are changed such that the
+results of the parsing may be different than they were when the cache entry
+was stored, it will warn (unless you turn warnings off), and, if C<strictmode>
+is not set, cause the file to be re-read and re-cached.  If C<strictmode> is
+set, it will die.  Note that the C<datahandler> option is not actually
+checked, since it is possible that a developmer might change the C<datahandler>
+subroutine without wanting to invalidate the cache.
 
 =item storable
 
@@ -2927,9 +3087,26 @@ don't want them to get untied.
 
 =head2 Cache Methods
 
-XML::Simple implements three caching schemes ('storable', 'memshare' and
-'memcopy').  You can implement a custom caching scheme by implementing
-two methods - one for reading from the cache and one for writing to it.
+XML::Simple implements four caching schemes ('storable', 'memshare',
+'memcopy', and a L<CHI>-like object).  You can implement a custom caching
+scheme two ways:
+
+You could use L<CHI> or any other object that implements
+the C<get()> and C<set()> methods.  The C<get()> method should take a
+single string scalar argument (this will be the filename) and return
+either C<undef> (if no value was found) or a previously stored string.
+The C<set()> method should take two parameters, a scalar string that
+represents the filename of the XML file and scalar string that contains
+a C<Storable> "frozen" copy of the parsed XML file.
+
+To use this method, using CHI, you could do something similar to this:
+
+  my $chi = CHI->new( driver => 'Memory', global => 0 );
+  my $data = XMLin( $XMLFileName, cache => $chi );
+
+Alternatively, the old method, kept for backwards-compatiblity, requires the
+implementation two methods - one for reading from the cache and one for
+writing to it.
 
 For example, you might implement a new 'dbm' scheme that stores cached data
 structures using the L<MLDBM> module.  First, you would add a
@@ -3361,4 +3538,5 @@ under the same terms as Perl itself.
 
 =cut
 
-
+# Set up VIM for people using modelines
+# vim: et sts=2 sw=2
