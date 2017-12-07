@@ -1645,7 +1645,12 @@ sub value_to_xml {
   }
 
   else {
-    croak "Can't encode a value of type: " . ref($ref);
+    # Before giving up, check if stringification is overloaded.
+    if (overload::OverloadedStringify($ref)) {
+      push @result, "$indent<$name>$ref</$name>$nl";
+    } else {
+      croak "Can't encode a value of type: " . ref($ref);
+    }
   }
 
 
