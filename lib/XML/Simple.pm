@@ -60,7 +60,7 @@ my %StrictMode     = ();
 my @KnownOptIn     = qw(keyattr keeproot forcecontent contentkey noattr
                         searchpath forcearray cache suppressempty parseropts
                         grouptags nsexpand datahandler varattr variables
-                        normalisespace normalizespace valueattr strictmode expandexternents);
+                        normalisespace normalizespace valueattr strictmode);
 
 my @KnownOptOut    = qw(keyattr keeproot contentkey noattr
                         rootname xmldecl outputfile noescape suppressempty
@@ -428,9 +428,7 @@ sub build_tree_xml_parser {
   }
 
   my $xp = XML::Parser->new(Style => 'Tree', @{$self->{opt}->{parseropts}});
-  unless ($self->{opt}->{expandexternents}) {
-      $xp->setHandlers(ExternEnt => sub {return $_[2]});
-  }
+  $xp->setHandlers(ExternEnt => sub {return $_[2]});
 
   my($tree);
   if($filename) {
@@ -771,8 +769,6 @@ sub handle_options  {
     $opt->{normalisespace} = $opt->{normalizespace};
   }
   $opt->{normalisespace} = 0 unless(defined($opt->{normalisespace}));
-
-  $opt->{expandexternents} = 0 unless(defined($opt->{expandexternents}));
 
   # Cleanups for values assumed to be arrays later
 
