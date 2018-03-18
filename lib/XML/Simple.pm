@@ -427,8 +427,7 @@ sub build_tree_xml_parser {
     carp "'nsexpand' option requires XML::SAX";
   }
 
-  my $xp = XML::Parser->new(Style => 'Tree', @{$self->{opt}->{parseropts}});
-  $xp->setHandlers(ExternEnt => sub {return $_[2]});
+  my $xp = $self->new_xml_parser();
 
   my($tree);
   if($filename) {
@@ -441,6 +440,23 @@ sub build_tree_xml_parser {
   }
 
   return($tree);
+}
+
+
+##############################################################################
+# Method: new_xml_parser()
+#
+# Simply calls the XML::Parser constructor.  Override this method to customise
+# the behaviour of the parser.
+#
+
+sub new_xml_parser {
+  my($self) = @_;
+
+  my $xp = XML::Parser->new(Style => 'Tree', @{$self->{opt}->{parseropts}});
+  $xp->setHandlers(ExternEnt => sub {return $_[2]});
+
+  return $xp;
 }
 
 
@@ -2872,6 +2888,11 @@ which to hang your modified behaviour.  You may find other undocumented methods
 by examining the source, but those may be subject to change in future releases.
 
 =over 4
+
+=item new_xml_parser()
+
+This method will be called when a new XML::Parser object must be constructed
+(either because XML::SAX is not installed or XML::Parser is preferred).
 
 =item handle_options(direction, name => value ...)
 

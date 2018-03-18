@@ -1,6 +1,9 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+  - disable entity expansion when using XML::Parser, for more secure default
+    behaviour (patch from Ray Morris)
+  - call to XML::Parser constructor is now in its own method to ease overriding
 
 2.24      2017-04-17 16:12:00+12:00 Pacific/Auckland
   - fix typo in last commit with mistakenly removed some underscores
