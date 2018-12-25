@@ -1249,7 +1249,7 @@ sub normalise_space {
 # Method: array_to_hash()
 #
 # Helper routine for collapse().
-# Attempts to 'fold' an array of hashes into an hash of hashes.  Returns a
+# Attempts to 'fold' an array of hashes into a hash of hashes.  Returns a
 # reference to the hash on success or the original array if folding is
 # not possible.  Behaviour is controlled by 'keyattr' option.
 #
@@ -1470,7 +1470,7 @@ sub value_to_xml {
   if(UNIVERSAL::isa($ref, 'HASH')      # It is a hash
      and keys %$ref                    # and it's not empty
      and $self->{opt}->{keyattr}       # and folding is enabled
-     and !$is_root                     # and its not the root element
+     and !$is_root                     # and it's not the root element
   ) {
     $ref = $self->hash_to_array($name, $ref);
   }

@@ -232,7 +232,7 @@ is_deeply($opt, $target, 'key_attr as scalar');
 
 
 # Weird variation, not exactly what we wanted but it is what we expected
-# given the current implementation and we don't want to break it accidently
+# given the current implementation and we don't want to break it accidentally
 
 $xml = q(
 <opt>
@@ -265,7 +265,7 @@ $opt = XMLin($xml, keyattr => { 'item' => 'id' }, @cont_key);
 is_deeply($opt, $target, 'same again but with priority switch');
 
 
-# Now a somewhat more complex test of targetting folding
+# Now a somewhat more complex test of targeting folding
 
 $xml = q(
 <opt>
@@ -687,7 +687,7 @@ $opt = XMLin($xml, forcecontent => 1, contentkey => '0');
 is_deeply($opt, {
     'x' => {           0 => 'text1' },
     'y' => { 'a' => 2, 0 => 'text2' }
-}, "even when we change it's name to 'text'");
+}, "even when we change its name to 'text'");
 
 
 # Confirm that spurious 'content' keys are *not* eliminated after array folding

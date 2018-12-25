@@ -549,7 +549,7 @@ If you're in any doubt, use Data::Dumper, eg:
 
 =head2 I'm getting 'Use of uninitialized value' warnings
 
-You're probably trying to index into a non-existant hash key - try
+You're probably trying to index into a non-existent hash key - try
 Data::Dumper.
 
 
