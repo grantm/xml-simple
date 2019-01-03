@@ -381,7 +381,7 @@ sub build_tree {
 
   $XML::SAX::ParserPackage = $preferred_parser if($preferred_parser);
 
-  my $sp = XML::SAX::ParserFactory->parser(Handler => $self);
+  my $sp = $self->new_sax_parser();
 
   $self->{nocollapse} = 1;
   my($tree);
@@ -457,6 +457,23 @@ sub new_xml_parser {
   $xp->setHandlers(ExternEnt => sub {return $_[2]});
 
   return $xp;
+}
+
+
+##############################################################################
+# Method: new_sax_parser()
+#
+# Instantiates a new SAX parser.  Override this method to customise
+# the behaviour of the parser.
+#
+
+sub new_sax_parser {
+  my($self, $handler) = @_;
+  $handler = $self unless defined($handler);
+
+  my $sp = XML::SAX::ParserFactory->parser(Handler => $handler);
+
+  return $sp;
 }
 
 
@@ -685,9 +702,7 @@ sub XMLout {
   }
   elsif($self->{opt}->{handler}) {
     require XML::SAX;
-    my $sp = XML::SAX::ParserFactory->parser(
-               Handler => $self->{opt}->{handler}
-             );
+    my $sp = $self->new_sax_parser($self->{opt}->{handler});
     return($sp->parse_string($xml));
   }
   else {
