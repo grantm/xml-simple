@@ -454,7 +454,7 @@ sub new_xml_parser {
   my($self) = @_;
 
   my $xp = XML::Parser->new(Style => 'Tree', @{$self->{opt}->{parseropts}});
-  $xp->setHandlers(ExternEnt => sub {return $_[2]});
+  $xp->setHandlers(ExternEnt => sub {return ''});
 
   return $xp;
 }
