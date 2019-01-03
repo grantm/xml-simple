@@ -473,6 +473,13 @@ sub new_sax_parser {
 
   my $sp = XML::SAX::ParserFactory->parser(Handler => $handler);
 
+  my @supported_features = $sp->supported_features();
+  foreach my $enttype (qw(general parameter)) {
+      my $feature = "http://xml.org/sax/features/external-$enttype-entities";
+      $sp->set_feature($feature, 0)
+          if (grep { $_ eq $feature } @supported_features);
+  }
+
   return $sp;
 }
 
