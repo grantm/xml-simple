@@ -29,7 +29,7 @@ my $xml = qq(<?xml version="1.0"?>
 
 my $opt = XMLin($xml);
 isnt($opt->{'user'}, 'bad', 'External entity not retrieved');
-like($opt->{'user'}, qr/^file/, 'External entity left as URL');
+is_deeply($opt->{'user'}, {}, 'External entity left as empty');
 
 unlink($filename) if (-f $filename);
 exit(0);

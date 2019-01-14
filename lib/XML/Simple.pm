@@ -453,8 +453,9 @@ sub build_tree_xml_parser {
 sub new_xml_parser {
   my($self) = @_;
 
-  my $xp = XML::Parser->new(Style => 'Tree', @{$self->{opt}->{parseropts}});
-  $xp->setHandlers(ExternEnt => sub {return $_[2]});
+  my $xp = XML::Parser->new(Style => 'Tree', NoExpand => 1,
+                            @{$self->{opt}->{parseropts}});
+  $xp->setHandlers(ExternEnt => sub {return ''}, Default => sub {});
 
   return $xp;
 }
