@@ -186,7 +186,7 @@ Revision history for {{$dist->name}}
   - integrated patch for test failures from Sean Campbell
   - fixed stringification of references during folding (reported
     by Trond Michelsen)
-  - fixed incompatability with Tie::IxHash (reported by
+  - fixed incompatibility with Tie::IxHash (reported by
     Venkataramana Mokkapati)
   - POD: alphabetised options (patch from John Borwick)
   - POD: updated suppressempty (patch from Kjetil Kjernsmo)
@@ -269,7 +269,7 @@ Revision history for {{$dist->name}}
     a recursive data structure
   - removed spurious checking code which stopped XMLout unfolding a
     single nested hash
-  - fixed t/4_MemShare.t to gracefully cope with the absense of utime()
+  - fixed t/4_MemShare.t to gracefully cope with the absence of utime()
   - changed t/3_Storable.t and t/5_MemCopy.t to skip gracefully if no
     Storable.pm
   - removed superflous eval blocks around requires
